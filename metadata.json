@@ -1,0 +1,6 @@
+{
+  "name": "Leveraged Real Estate IRR & Amortization Calculator",
+  "description": "Experiment with varying real estate inputs to dynamically generate a 10-year investment summary, track exact monthly loan amortization, and calculate true annualized IRR.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
