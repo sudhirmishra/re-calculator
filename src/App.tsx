@@ -116,6 +116,12 @@ export default function App() {
     return isNaN(num) ? 0 : num;
   }, [salePriceInput]);
 
+  // Calculate property appreciation CAGR
+  const propertyAppreciationCAGR = useMemo(() => {
+    if (purchasePrice <= 0 || salePrice <= 0 || holdingPeriod <= 0) return 0;
+    return (Math.pow(salePrice / purchasePrice, 1 / holdingPeriod) - 1) * 100;
+  }, [purchasePrice, salePrice, holdingPeriod]);
+
   // Sync back holding period if user decreases loan tenure to be shorter than holding period
   // Usually, they are independent, but to prevent negative balance queries, we capped holdingPeriod limit or handled it
   useEffect(() => {
@@ -176,6 +182,37 @@ export default function App() {
       return `₹${(num / 1000).toFixed(2)} Thousand`;
     }
     return `₹${num}`;
+  };
+
+  // Convert number to Lakh / Crore with custom hover tooltip stating exact expanded number
+  const formatLargeINR = (amount: number, className: string = ''): React.ReactNode => {
+    const full = formatINR(amount);
+    const absVal = Math.abs(amount);
+    const isNegative = amount < 0;
+    
+    let shortText = full;
+    let isLarge = false;
+    
+    if (absVal >= 10000000) { // 1 Crore
+      shortText = `${isNegative ? '-' : ''}₹${(absVal / 10000000).toFixed(2)} Cr`;
+      isLarge = true;
+    } else if (absVal >= 100000) { // 1 Lakh
+      shortText = `${isNegative ? '-' : ''}₹${(absVal / 100000).toFixed(2)} Lakh`;
+      isLarge = true;
+    }
+
+    if (isLarge) {
+      return (
+        <span 
+          title={full} 
+          className={`cursor-help border-b border-dashed border-slate-300/80 hover:border-slate-500 transition-all font-semibold ${className}`}
+        >
+          {shortText}
+        </span>
+      );
+    }
+    
+    return <span className={className}>{full}</span>;
   };
 
   // Safe manual keyup parsers to auto-add commas
@@ -411,6 +448,12 @@ export default function App() {
                       Appreciation: {purchasePrice > 0 ? (((salePrice - purchasePrice) / purchasePrice) * 100).toFixed(0) : 0}%
                     </span>
                   </div>
+                  <div className="mt-1.5 flex items-center justify-between bg-indigo-50 border border-indigo-100 rounded px-2 py-1 text-3xs">
+                    <span className="font-semibold text-indigo-900">Organic Asset CAGR</span>
+                    <span className="font-extrabold text-indigo-700 font-mono">
+                      {propertyAppreciationCAGR.toFixed(2)}%
+                    </span>
+                  </div>
                 </div>
               </div>
               {/* Parameter Group 2: Debt Financing */}
@@ -441,8 +484,8 @@ export default function App() {
                     className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                   />
                   <div className="flex justify-between items-center text-3xs text-slate-500 font-medium">
-                    <span>Down Payment Amt: <strong className="text-slate-800">{formatINR(outputs.downPaymentAmount)}</strong></span>
-                    <span>Loan Amt (LTV): <strong className="text-slate-800">{formatINR(outputs.loanAmount)} ({100 - downPaymentPct}%)</strong></span>
+                    <span>Down Payment Amt: <strong className="text-slate-800">{formatLargeINR(outputs.downPaymentAmount)}</strong></span>
+                    <span>Loan Amt (LTV): <strong className="text-slate-800">{formatLargeINR(outputs.loanAmount)} ({100 - downPaymentPct}%)</strong></span>
                   </div>
                 </div>
 
@@ -489,7 +532,7 @@ export default function App() {
                   {outputs.monthlyEmi > 0 && (
                     <div className="bg-indigo-50/50 p-2 rounded border border-indigo-100 text-3xs text-indigo-900 flex justify-between items-center">
                       <span className="font-semibold">Monthly EMI Payment:</span>
-                      <strong className="font-extrabold font-mono">{formatINR(outputs.monthlyEmi)}/mo</strong>
+                      <strong className="font-extrabold font-mono">{formatLargeINR(outputs.monthlyEmi)}/mo</strong>
                     </div>
                   )}
                 </div>
@@ -567,8 +610,8 @@ export default function App() {
                         className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                       />
                       <div className="flex justify-between text-3xs text-slate-400 font-medium">
-                        <span>Annual: {formatINR(purchasePrice * (rentalYield / 100))}</span>
-                        <span>Monthly: {formatINR((purchasePrice * (rentalYield / 100)) / 12)}/mo</span>
+                        <span>Annual: {formatLargeINR(purchasePrice * (rentalYield / 100))}</span>
+                        <span>Monthly: {formatLargeINR((purchasePrice * (rentalYield / 100)) / 12)}/mo</span>
                       </div>
                     </div>
 
@@ -635,7 +678,7 @@ export default function App() {
                   className={`text-base min-[380px]:text-lg sm:text-sm min-[720px]:text-base md:text-lg lg:text-xl xl:text-2xl font-extrabold tracking-tight mt-1 font-mono truncate ${outputs.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}
                   title={formatINR(outputs.netProfit)}
                 >
-                  {formatINR(outputs.netProfit)}
+                  {formatLargeINR(outputs.netProfit)}
                 </div>
               </div>
               <p className="text-3xs text-slate-400 mt-2 border-t border-slate-150 pt-1.5 truncate">
@@ -671,7 +714,7 @@ export default function App() {
                   className="text-base min-[380px]:text-lg sm:text-sm min-[720px]:text-base md:text-lg lg:text-xl xl:text-2xl font-extrabold tracking-tight mt-1 text-slate-800 font-mono truncate"
                   title={formatINR(outputs.totalCapitalInvested)}
                 >
-                  {formatINR(outputs.totalCapitalInvested)}
+                  {formatLargeINR(outputs.totalCapitalInvested)}
                 </div>
               </div>
               <p className="text-3xs text-slate-400 mt-2 border-t border-slate-150 pt-1.5 truncate">
@@ -728,28 +771,28 @@ export default function App() {
                       <tr className="hover:bg-slate-50/40">
                         <td className="px-4 py-3 text-xs font-medium text-slate-500">Property Purchase Price</td>
                         <td className="px-4 py-3 text-xs font-bold text-slate-900 text-right font-mono">
-                          {formatINR(outputs.purchasePrice)}
+                          {formatLargeINR(outputs.purchasePrice)}
                         </td>
                       </tr>
 
                       <tr className="hover:bg-slate-50/40">
                         <td className="px-4 py-3 text-xs font-medium text-slate-500">Down Payment Amount</td>
                         <td className="px-4 py-3 text-xs font-bold text-slate-900 text-right font-mono">
-                          {formatINR(outputs.downPaymentAmount)} <span className="text-4xs text-slate-400">({downPaymentPct}%)</span>
+                          {formatLargeINR(outputs.downPaymentAmount)} <span className="text-4xs text-slate-400">({downPaymentPct}%)</span>
                         </td>
                       </tr>
 
                       <tr className="hover:bg-slate-50/40">
                         <td className="px-4 py-3 text-xs font-medium text-slate-500">Loan Amount</td>
                         <td className="px-4 py-3 text-xs font-bold text-slate-900 text-right font-mono">
-                          {formatINR(outputs.loanAmount)} <span className="text-4xs text-slate-400">({100 - downPaymentPct}% LTV)</span>
+                          {formatLargeINR(outputs.loanAmount)} <span className="text-4xs text-slate-400">({100 - downPaymentPct}% LTV)</span>
                         </td>
                       </tr>
 
                       <tr className="hover:bg-slate-50/40 bg-indigo-50/20">
                         <td className="px-4 py-3 text-xs font-semibold text-indigo-900">Monthly EMI</td>
                         <td className="px-4 py-3 text-xs font-extrabold text-indigo-700 text-right font-mono">
-                          {formatINR(outputs.monthlyEmi)}
+                          {formatLargeINR(outputs.monthlyEmi)}
                         </td>
                       </tr>
 
@@ -759,7 +802,7 @@ export default function App() {
                           Total EMIs Paid (Over Holding Period)
                         </td>
                         <td className="px-4 py-2.5 text-xs font-bold text-slate-900 text-right font-mono">
-                          {formatINR(outputs.totalEmisPaid)}
+                          {formatLargeINR(outputs.totalEmisPaid)}
                         </td>
                       </tr>
                       <tr className="bg-slate-50/10">
@@ -767,7 +810,7 @@ export default function App() {
                           <span className="h-1.5 w-1.5 rounded-full bg-blue-400"></span> Out of which is Principal Paid
                         </td>
                         <td className="px-4 py-1.5 text-3xs font-medium text-slate-600 text-right font-mono">
-                          {formatINR(outputs.totalPrincipalPaid)}
+                          {formatLargeINR(outputs.totalPrincipalPaid)}
                         </td>
                       </tr>
                       <tr className="bg-slate-50/10">
@@ -775,28 +818,28 @@ export default function App() {
                           <span className="h-1.5 w-1.5 rounded-full bg-amber-400"></span> Out of which is Interest Paid
                         </td>
                         <td className="px-4 py-1.5 text-3xs font-medium text-slate-600 text-right font-mono">
-                          {formatINR(outputs.totalInterestPaid)}
+                          {formatLargeINR(outputs.totalInterestPaid)}
                         </td>
                       </tr>
 
                       <tr className="hover:bg-slate-50/40 font-semibold">
                         <td className="px-4 py-3 text-xs text-slate-800">Total Capital Invested (Down Payment + EMIs Paid)</td>
                         <td className="px-4 py-3 text-xs font-bold text-slate-900 text-right font-mono">
-                          {formatINR(outputs.totalCapitalInvested)}
+                          {formatLargeINR(outputs.totalCapitalInvested)}
                         </td>
                       </tr>
 
                       <tr className="hover:bg-slate-50/40">
                         <td className="px-4 py-3 text-xs font-medium text-slate-500">Total Rental Income Earned</td>
                         <td className="px-4 py-3 text-xs font-bold text-emerald-600 text-right font-mono">
-                          {formatINR(outputs.totalRentalEarned)}
+                          {formatLargeINR(outputs.totalRentalEarned)}
                         </td>
                       </tr>
 
                       <tr className="hover:bg-slate-50/40">
                         <td className="px-4 py-3 text-xs font-medium text-slate-500">Property Sale Price</td>
                         <td className="px-4 py-3 text-xs font-bold text-slate-900 text-right font-mono">
-                          {formatINR(outputs.salePrice)}
+                          {formatLargeINR(outputs.salePrice)}
                         </td>
                       </tr>
 
@@ -806,21 +849,21 @@ export default function App() {
                           <HelpCircle className="h-3 w-3 text-slate-400 cursor-pointer" onClick={() => setActiveTooltip('outstandingBalance')} />
                         </td>
                         <td className="px-4 py-3 text-xs font-bold text-slate-900 text-right font-mono text-amber-700">
-                          {formatINR(outputs.outstandingPrincipalToClose)}
+                          {formatLargeINR(outputs.outstandingPrincipalToClose)}
                         </td>
                       </tr>
 
                       <tr className="hover:bg-slate-50/40 font-semibold bg-indigo-50/10">
                         <td className="px-4 py-3 text-xs text-slate-800">Net Cash Received from Sale (Sale Price - Loan Clearance)</td>
                         <td className="px-4 py-3 text-xs font-bold text-slate-900 text-right font-mono">
-                          {formatINR(outputs.netCashFromSale)}
+                          {formatLargeINR(outputs.netCashFromSale)}
                         </td>
                       </tr>
 
                       <tr className="font-bold bg-emerald-50/40 text-slate-900">
                         <td className="px-4 py-3 text-xs text-slate-800">Final Net Profit Pocketed (Net Cash Received + Total Rent - Total Capital Invested)</td>
                         <td className={`px-4 py-3 text-xs font-extrabold text-right font-mono ${outputs.netProfit >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
-                          {formatINR(outputs.netProfit)}
+                          {formatLargeINR(outputs.netProfit)}
                         </td>
                       </tr>
 
@@ -839,7 +882,7 @@ export default function App() {
                 <div className="mt-4 p-3 bg-blue-50 border border-blue-150 rounded-lg flex items-start gap-2 text-3xs text-blue-800">
                   <Info className="h-4 w-4 shrink-0 text-blue-600 mt-0.5" />
                   <div>
-                    <strong>Leverage Highlight:</strong> By investing only {formatINR(outputs.downPaymentAmount)} as a down payment instead of paying the full ₹{new Intl.NumberFormat('en-IN').format(outputs.purchasePrice)}, your final annualized return is calculated on your actual periodic cash outflows.
+                    <strong>Leverage Highlight:</strong> By investing only {formatLargeINR(outputs.downPaymentAmount)} as a down payment instead of paying the full {formatLargeINR(outputs.purchasePrice)}, your final annualized return is calculated on your actual periodic cash outflows.
                   </div>
                 </div>
               </div>
@@ -1029,19 +1072,19 @@ export default function App() {
                             <span className="text-[10px] font-bold text-slate-400 uppercase flex items-center justify-center gap-1">
                               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Prop Value
                             </span>
-                            <div className="text-base font-extrabold text-slate-900">{formatINR(interpPropVal)}</div>
+                            <div className="text-base font-extrabold text-slate-900">{formatLargeINR(interpPropVal)}</div>
                           </div>
                           <div className="border-r border-slate-100">
                             <span className="text-[10px] font-bold text-slate-400 uppercase flex items-center justify-center gap-1">
                               <span className="h-1.5 w-1.5 rounded-full bg-amber-500"></span> Remaining Debt
                             </span>
-                            <div className="text-base font-extrabold text-slate-900">{formatINR(loanBal)}</div>
+                            <div className="text-base font-extrabold text-slate-900">{formatLargeINR(loanBal)}</div>
                           </div>
                           <div>
                             <span className="text-[10px] font-bold text-slate-400 uppercase flex items-center justify-center gap-1">
                               <span className="h-1.5 w-1.5 rounded-full bg-indigo-600"></span> Built-in Equity
                             </span>
-                            <div className="text-base font-extrabold text-indigo-600">{formatINR(equity)}</div>
+                            <div className="text-base font-extrabold text-indigo-600">{formatLargeINR(equity)}</div>
                           </div>
                         </div>
                       );
@@ -1058,14 +1101,14 @@ export default function App() {
                   <div className="border border-slate-200 p-4 rounded-xl text-center bg-slate-50/30">
                     <span className="text-[10px] font-bold text-slate-400 uppercase block">Equity Built (Loan Paid Down)</span>
                     <strong className="text-base font-bold text-slate-800 mt-1 block">
-                      {formatINR(outputs.loanAmount - outputs.outstandingPrincipalToClose)}
+                      {formatLargeINR(outputs.loanAmount - outputs.outstandingPrincipalToClose)}
                     </strong>
                     <span className="text-4xs text-slate-400">Total debt principal retired</span>
                   </div>
                   <div className="border border-slate-200 p-4 rounded-xl text-center bg-slate-50/30">
                     <span className="text-[10px] font-bold text-slate-400 uppercase block">Total Rent Earned</span>
                     <strong className="text-base font-bold text-emerald-600 mt-1 block">
-                      {formatINR(outputs.totalRentalEarned)}
+                      {formatLargeINR(outputs.totalRentalEarned)}
                     </strong>
                     <span className="text-4xs text-slate-400">Additional passive cash inflow</span>
                   </div>
@@ -1119,11 +1162,11 @@ export default function App() {
                       {outputs.yearlySummary.map((yr, idx) => (
                         <tr key={idx} className="hover:bg-slate-50/50">
                           <td className="px-4 py-2.5 font-bold text-slate-900 font-sans">Year {yr.year}</td>
-                          <td className="px-4 py-2.5 text-right text-slate-800">{formatINR(yr.emiPaid)}</td>
-                          <td className="px-4 py-2.5 text-right text-amber-700">{formatINR(yr.interestPaid)}</td>
-                          <td className="px-4 py-2.5 text-right text-indigo-700">{formatINR(yr.principalPaid)}</td>
-                          <td className="px-4 py-2.5 text-right text-emerald-600">{formatINR(yr.rentEarned)}</td>
-                          <td className="px-4 py-2.5 text-right text-slate-900">{formatINR(yr.endingBalance)}</td>
+                          <td className="px-4 py-2.5 text-right text-slate-800">{formatLargeINR(yr.emiPaid)}</td>
+                          <td className="px-4 py-2.5 text-right text-amber-700">{formatLargeINR(yr.interestPaid)}</td>
+                          <td className="px-4 py-2.5 text-right text-indigo-700">{formatLargeINR(yr.principalPaid)}</td>
+                          <td className="px-4 py-2.5 text-right text-emerald-600">{formatLargeINR(yr.rentEarned)}</td>
+                          <td className="px-4 py-2.5 text-right text-slate-900">{formatLargeINR(yr.endingBalance)}</td>
                         </tr>
                       ))}
                     </tbody>

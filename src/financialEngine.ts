@@ -51,21 +51,23 @@ export function calculateMonthlyIRR(cashFlows: number[]): number | null {
   }
 
   // Define initial bounds for monthly rate
-  let low = -0.9999;
+  let low = -0.5; // Safe from underflow/NaN issues (losing 50% of capital every month)
   let high = 5.0; // 500% monthly return
   
   let npvLow = calculateNPV(low, cashFlows);
   let npvHigh = calculateNPV(high, cashFlows);
 
-  // If both endpoints have the same sign, we need to locate a proper bracketing range
-  if (npvLow * npvHigh > 0) {
+  // If npvLow or npvHigh is NaN or Infinite, or if we need a proper bracketing range
+  if (isNaN(npvLow) || isNaN(npvHigh) || !isFinite(npvLow) || !isFinite(npvHigh) || (npvLow * npvHigh > 0)) {
     let found = false;
-    let prevVal = npvLow;
-    let prevRate = low;
+    let prevVal = isNaN(npvLow) || !isFinite(npvLow) ? calculateNPV(-0.2, cashFlows) : npvLow;
+    let prevRate = -0.2;
     
     // Scan across possible rates to find a sign change interval
-    for (let rTest = -0.95; rTest <= 10.0; rTest += 0.05) {
+    for (let rTest = -0.2; rTest <= 10.0; rTest += 0.05) {
       const val = calculateNPV(rTest, cashFlows);
+      if (isNaN(val) || !isFinite(val)) continue;
+      
       if (val * prevVal < 0) {
         low = prevRate;
         high = rTest;
@@ -87,11 +89,19 @@ export function calculateMonthlyIRR(cashFlows: number[]): number | null {
     mid = (low + high) / 2;
     const npvMid = calculateNPV(mid, cashFlows);
     
+    if (isNaN(npvMid) || !isFinite(npvMid)) {
+      return null;
+    }
+
     if (Math.abs(npvMid) < 1e-10) {
       break;
     }
     
     const valLow = calculateNPV(low, cashFlows);
+    if (isNaN(valLow) || !isFinite(valLow)) {
+      return null;
+    }
+
     if (valLow * npvMid < 0) {
       high = mid;
     } else {
