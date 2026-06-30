@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leveraged Real Estate IRR & Amortization Calculator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { font-family: 'Inter', system-ui, sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    input[type="range"] { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 4px; outline: none; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #6366f1; cursor: pointer; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+    input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type="number"] { -moz-appearance: textfield; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 antialiased">
+
+  <header class="sticky top-0 z-40 bg-white border-b border-slate-200 px-4 py-3 md:px-8">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="h-9 w-9 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-sm">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11m16-11v11M8 14v.01M12 14v.01M16 14v.01"/></svg>
+        </div>
+        <div>
+          <span class="text-[10px] font-bold tracking-widest text-indigo-600 uppercase">Leveraged Asset Model</span>
+          <h1 class="text-lg md:text-xl font-bold tracking-tight">EquityMax Real Estate IRR & Amortization Calculator</h1>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- ─── Left Column: Inputs ─── -->
+    <section class="lg:col-span-5 space-y-5">
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-5">
+
+        <!-- 1. Property & Sale -->
+        <div>
+          <div class="border-b border-slate-100 pb-2 mb-3">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">1. Property & Sale</h3>
+          </div>
+
+          <!-- Purchase Price -->
+          <div class="space-y-1 mb-3">
+            <div class="flex justify-between items-center">
+              <label class="text-xs font-semibold text-slate-600">Property Purchase Price (₹)</label>
+              <span class="text-xs font-bold text-indigo-600 font-mono" id="purchaseWords">₹1.00 Cr</span>
+            </div>
+            <input type="text" id="purchasePriceInput" value="1,00,00,000"
+              class="block w-full px-3 py-2 text-sm font-semibold bg-slate-50 border border-slate-200 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <input type="range" id="purchasePriceRange" min="1000000" max="100000000" step="500000" value="10000000"
+              class="w-full mt-1 accent-indigo-600" />
+          </div>
+
+          <!-- Down Payment -->
+          <div class="space-y-1 mb-3">
+            <div class="flex justify-between items-center">
+              <label class="text-xs font-semibold text-slate-600">Down Payment (%)</label>
+              <span class="text-xs font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded font-mono" id="downPaymentLabel">10%</span>
+            </div>
+            <input type="range" id="downPaymentPct" min="0" max="100" step="5" value="10" class="w-full accent-indigo-600" />
+            <div class="flex justify-between text-3xs text-slate-500 font-medium">
+              <span>Down: <strong id="downAmt">₹10,00,000</strong></span>
+              <span>Loan: <strong id="loanAmt">₹90,00,000</strong> (<strong id="ltvPct">90</strong>%)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Financing -->
+        <div>
+          <div class="border-b border-slate-100 pb-2 mb-3">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">2. Financing</h3>
+          </div>
+
+          <!-- Interest Rate -->
+          <div class="space-y-1 mb-3">
+            <div class="flex justify-between items-center">
+              <label class="text-xs font-semibold text-slate-600">Loan Interest Rate (% p.a.)</label>
+              <span class="text-xs font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded font-mono" id="interestLabel">8.0%</span>
+            </div>
+            <input type="range" id="interestRate" min="0" max="20" step="0.1" value="8" class="w-full accent-indigo-600" />
+          </div>
+
+          <!-- Loan Tenure -->
+          <div class="space-y-1 mb-3">
+            <div class="flex justify-between items-center">
+              <label class="text-xs font-semibold text-slate-600">Loan Tenure (Years)</label>
+              <span class="text-xs font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded font-mono" id="loanTenureLabel">20 Years</span>
+            </div>
+            <input type="range" id="loanTenure" min="5" max="30" step="1" value="20" class="w-full accent-indigo-600" />
+          </div>
+        </div>
+
+        <!-- 3. Holding & Sale -->
+        <div>
+          <div class="border-b border-slate-100 pb-2 mb-3">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">3. Holding & Sale</h3>
+          </div>
+
+          <!-- Holding Period -->
+          <div class="space-y-1 mb-3">
+            <div class="flex justify-between items-center">
+              <label class="text-xs font-semibold text-slate-600">Holding Period (Years)</label>
+              <span class="text-xs font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded font-mono" id="holdingLabel">10 Years</span>
+            </div>
+            <input type="range" id="holdingPeriod" min="1" max="20" step="1" value="10" class="w-full accent-indigo-600" />
+          </div>
+
+          <!-- Sale Price -->
+          <div class="space-y-1 mb-3">
+            <div class="flex justify-between items-center">
+              <label class="text-xs font-semibold text-slate-600">Target Property Sale Price (₹)</label>
+              <span class="text-xs font-bold text-indigo-600 font-mono" id="saleWords">₹2.05 Cr</span>
+            </div>
+            <input type="text" id="salePriceInput" value="2,05,00,000"
+              class="block w-full px-3 py-2 text-sm font-semibold bg-slate-50 border border-slate-200 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <input type="range" id="salePriceRange" min="1000000" max="200000000" step="500000" value="20500000"
+              class="w-full mt-1 accent-indigo-600" />
+            <div class="flex items-center gap-3 text-3xs mt-1">
+              <span class="text-slate-500">Multiplier: <strong id="multiplierBadge" class="text-slate-700">2.05x</strong></span>
+              <span class="text-slate-500">Appreciation: <strong id="appreciationBadge" class="text-slate-700">105%</strong></span>
+              <span class="ml-auto inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-3xs font-bold text-emerald-700 border border-emerald-200">
+                CAGR: <span id="cagrBadge">7.44%</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Disbursal Structure -->
+        <div>
+          <div class="border-b border-slate-100 pb-2 mb-3">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">4. Disbursal Structure</h3>
+          </div>
+
+          <!-- Disbursal Type -->
+          <div class="space-y-1 mb-3">
+            <label class="text-xs font-semibold text-slate-600">Loan Disbursal & Construction Type</label>
+            <select id="disbursalType"
+              class="block w-full px-3 py-2 text-sm font-semibold bg-slate-50 border border-slate-200 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="upfront">Upfront Full Disbursal</option>
+              <option value="clp-preemi">CLP with Pre-EMI</option>
+              <option value="clp-fullemi">CLP with Full-EMI</option>
+            </select>
+          </div>
+
+          <!-- Construction Period (CLP only) -->
+          <div id="clpOptions" class="space-y-3 pl-3 border-l-2 border-indigo-200 hidden">
+            <div class="space-y-1">
+              <div class="flex justify-between items-center">
+                <label class="text-xs font-semibold text-slate-600">Construction Period (Years)</label>
+                <span class="text-xs font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded font-mono" id="constructionLabel">4 Years</span>
+              </div>
+              <input type="range" id="constructionPeriod" min="1" max="7" step="1" value="4" class="w-full accent-indigo-600" />
+            </div>
+            <!-- Tranche Schedule -->
+            <div class="space-y-1">
+              <label class="text-xs font-semibold text-slate-600">Tranche Schedule (% disbursed)</label>
+              <div class="grid grid-cols-4 gap-2">
+                <div class="text-center"><span class="text-3xs font-semibold text-slate-500">Year 0</span><input type="number" id="tranche0" value="25" min="0" max="100" class="block w-full mt-0.5 px-1 py-1 text-xs font-bold text-center bg-slate-50 border border-slate-200 rounded" /></div>
+                <div class="text-center"><span class="text-3xs font-semibold text-slate-500">Year 1</span><input type="number" id="tranche1" value="25" min="0" max="100" class="block w-full mt-0.5 px-1 py-1 text-xs font-bold text-center bg-slate-50 border border-slate-200 rounded" /></div>
+                <div class="text-center"><span class="text-3xs font-semibold text-slate-500">Year 2</span><input type="number" id="tranche2" value="25" min="0" max="100" class="block w-full mt-0.5 px-1 py-1 text-xs font-bold text-center bg-slate-50 border border-slate-200 rounded" /></div>
+                <div class="text-center"><span class="text-3xs font-semibold text-slate-500">Year 3</span><input type="number" id="tranche3" value="25" min="0" max="100" class="block w-full mt-0.5 px-1 py-1 text-xs font-bold text-center bg-slate-50 border border-slate-200 rounded" /></div>
+              </div>
+              <div class="flex justify-between text-3xs mt-1">
+                <span class="text-slate-500">Total: <strong id="trancheSum">100</strong>%</span>
+                <span id="trancheWarning" class="text-amber-600 font-semibold hidden">Should total 100%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ─── Right Column: Outputs ─── -->
+    <section class="lg:col-span-7 space-y-5">
+
+      <!-- KPI Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="bg-gradient-to-br from-indigo-900 to-indigo-950 text-white rounded-xl p-3 shadow-sm border border-indigo-950 min-h-[100px] flex flex-col justify-between">
+          <span class="text-[10px] font-bold tracking-wider text-indigo-300 uppercase">Annualized IRR</span>
+          <div class="text-xl sm:text-2xl font-extrabold text-emerald-400 font-mono mt-1" id="kpiIrr">N/A</div>
+          <p class="text-3xs text-indigo-200/70 mt-1 border-t border-indigo-800/60 pt-1">True compound return</p>
+        </div>
+        <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 min-h-[100px] flex flex-col justify-between">
+          <span class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Net Profit</span>
+          <div class="text-lg sm:text-xl font-extrabold font-mono mt-1" id="kpiProfit">₹0</div>
+          <p class="text-3xs text-slate-400 mt-1 border-t border-slate-100 pt-1">Absolute cash gain</p>
+        </div>
+        <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 min-h-[100px] flex flex-col justify-between">
+          <span class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Equity Multiple</span>
+          <div class="text-lg sm:text-xl font-extrabold text-slate-800 font-mono mt-1" id="kpiEquity">0.00x</div>
+          <p class="text-3xs text-slate-400 mt-1 border-t border-slate-100 pt-1">Return multiplier</p>
+        </div>
+        <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 min-h-[100px] flex flex-col justify-between">
+          <span class="text-[10px] font-bold tracking-wider text-slate-400 uppercase">Capital Invested</span>
+          <div class="text-lg sm:text-xl font-extrabold text-slate-800 font-mono mt-1" id="kpiCapital">₹0</div>
+          <p class="text-3xs text-slate-400 mt-1 border-t border-slate-100 pt-1" id="kpiCapitalLabel">Down Payment + EMIs</p>
+        </div>
+      </div>
+
+      <!-- Output Table -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Investment Summary</h3>
+            <span class="text-3xs bg-indigo-50 text-indigo-700 font-bold px-2.5 py-0.5 rounded border border-indigo-100">Live Updated</span>
+          </div>
+          <div class="overflow-x-auto rounded-lg border border-slate-200">
+            <table class="min-w-full divide-y divide-slate-100">
+              <tbody class="divide-y divide-slate-100 text-slate-700 bg-white" id="outputTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+          <div class="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-lg text-3xs text-blue-800 flex items-start gap-2">
+            <svg class="h-4 w-4 shrink-0 text-blue-600 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <div><strong>Leverage Highlight:</strong> By investing only <span id="highlightDown">₹10,00,000</span> as a down payment, your final annualized return is calculated on your actual periodic cash outflows.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Methodology -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+        <h3 class="text-sm font-extrabold text-slate-900 uppercase tracking-wider mb-3">Investment Mathematics Explained</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-600 leading-relaxed">
+          <div>
+            <h4 class="font-bold text-slate-800 mb-1">1. Amortization Engine</h4>
+            <p>A mortgage is paid back in Equated Monthly Installments (EMI). Each month, interest is calculated on the outstanding balance. The remaining portion pays down principal.</p>
+            <div class="my-1.5 p-2 bg-slate-50 border border-slate-100 rounded font-mono text-3xs text-slate-700 font-semibold">Principal Paid = Monthly EMI - Outstanding × r</div>
+          </div>
+          <div>
+            <h4 class="font-bold text-slate-800 mb-1">2. Annualized IRR Math</h4>
+            <p>IRR is the discount rate that sets the Net Present Value (NPV) of all cash flows to zero. Our model solves this using binary search root-finding.</p>
+            <div class="my-1.5 p-2 bg-slate-50 border border-slate-100 rounded font-mono text-3xs text-slate-700 font-semibold">0 = -DownPayment + Σ[CFₜ / (1+r)ᵗ]</div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <footer class="border-t border-slate-100 mt-8 bg-white py-6 px-4 text-center text-xs text-slate-400">
+    <p>&copy; 2026 Leveraged Real Estate Model Engine. All calculations run with high-precision double arithmetic.</p>
+    <p class="text-3xs text-slate-400 mt-1">Disclaimer: Financial investment calculations are for educational scenarios.</p>
+  </footer>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// FINANCIAL ENGINE
+// ═══════════════════════════════════════════════════════════════
+
+function calcEMI(principal, rate, months) {
+  if (principal <= 0 || rate <= 0) return principal > 0 ? principal / months : 0;
+  const factor = Math.pow(1 + rate, months);
+  return principal * rate * factor / (factor - 1);
+}
+
+function calcNPV(rate, cfs) {
+  let npv = 0;
+  for (let t = 0; t < cfs.length; t++) npv += cfs[t] / Math.pow(1 + rate, t);
+  return npv;
+}
+
+function calcMonthlyIRR(cfs) {
+  const hasPos = cfs.some(c => c > 0);
+  const hasNeg = cfs.some(c => c < 0);
+  if (!hasPos || !hasNeg) return null;
+
+  let low = -0.9999, high = 5.0;
+  let npvLow = calcNPV(low, cfs), npvHigh = calcNPV(high, cfs);
+
+  if (npvLow * npvHigh > 0) {
+    let found = false, prev = npvLow, prevRate = low;
+    for (let r = -0.95; r <= 10; r += 0.05) {
+      const v = calcNPV(r, cfs);
+      if (v * prev < 0) { low = prevRate; high = r; found = true; break; }
+      prev = v; prevRate = r;
+    }
+    if (!found) return null;
+  }
+
+  let mid = 0;
+  for (let i = 0; i < 80; i++) {
+    mid = (low + high) / 2;
+    const v = calcNPV(mid, cfs);
+    if (Math.abs(v) < 1e-10) break;
+    if (calcNPV(low, cfs) * v < 0) high = mid; else low = mid;
+    if (high - low < 1e-12) break;
+  }
+  return mid;
+}
+
+// ─── Main Model ───
+
+function runModel(inputs) {
+  const { purchasePrice, downPaymentPct, interestRate, loanTenure, holdingPeriod,
+          salePrice, disbursalType, constructionPeriod, tranchePcts } = inputs;
+
+  const downPaymentAmount = purchasePrice * downPaymentPct / 100;
+  const loanAmount = purchasePrice - downPaymentAmount;
+  const r = (interestRate / 100) / 12;
+  const n = loanTenure * 12;
+  const h = holdingPeriod * 12;
+
+  const fullEMI = calcEMI(loanAmount, r, n);
+  const constructionMonths = (disbursalType !== 'upfront') ? constructionPeriod * 12 : 0;
+
+  // Tranche amounts as percentages of loan
+  const tranchePctValues = [
+    (tranchePcts[0] || 25) / 100,
+    (tranchePcts[1] || 25) / 100,
+    (tranchePcts[2] || 25) / 100,
+    (tranchePcts[3] || 25) / 100,
+  ];
+  const trancheAmounts = tranchePctValues.map(p => loanAmount * p);
+  const totalTranchePct = tranchePctValues.reduce((a, b) => a + b, 0);
+
+  const schedule = [];
+  let totalInterestPaid = 0, totalPrincipalPaid = 0, totalEmisPaid = 0;
+  let totalPreEmiPaid = 0;
+
+  let cumulativeDisbursed = 0;
+  let balance = 0;
+  let cumulativePrincipalPaid = 0;
+  let monthlyPaymentLabel = '';
+  let monthlyPaymentValue = 0;
+
+  for (let m = 1; m <= h; m++) {
+    let interestPaid = 0, principalPaid = 0, emiPaid = 0, outstandingBal = 0;
+    let isPreEmi = false;
+
+    if (disbursalType === 'upfront') {
+      // ── TYPE A: Upfront Full Disbursal ──
+      monthlyPaymentLabel = 'Full EMI';
+      if (balance === 0) balance = loanAmount;
+      if (balance > 0.01) {
+        interestPaid = balance * r;
+        emiPaid = fullEMI;
+        principalPaid = emiPaid - interestPaid;
+        if (principalPaid > balance) { principalPaid = balance; emiPaid = interestPaid + principalPaid; }
+        balance -= principalPaid;
+        if (balance < 0.01) balance = 0;
+      }
+      outstandingBal = balance;
+
+    } else if (disbursalType === 'clp-preemi') {
+      // ── TYPE B: CLP with Pre-EMI ──
+      // Add tranche at months 1, 13, 25, 37
+      if (m === 1) cumulativeDisbursed += trancheAmounts[0];
+      if (m === 13) cumulativeDisbursed += trancheAmounts[1];
+      if (m === 25) cumulativeDisbursed += trancheAmounts[2];
+      if (m === 37) cumulativeDisbursed += trancheAmounts[3];
+
+      if (m <= constructionMonths) {
+        // Phase 1: Pre-EMI (interest only)
+        isPreEmi = true;
+        monthlyPaymentLabel = 'Pre-EMI';
+        interestPaid = cumulativeDisbursed * r;
+        emiPaid = interestPaid;
+        principalPaid = 0;
+        outstandingBal = cumulativeDisbursed;
+        totalPreEmiPaid += interestPaid;
+      } else {
+        // Phase 2: Full EMI
+        monthlyPaymentLabel = 'Full EMI';
+        if (!balance) balance = loanAmount;
+        if (balance > 0.01) {
+          interestPaid = balance * r;
+          emiPaid = fullEMI;
+          principalPaid = emiPaid - interestPaid;
+          if (principalPaid > balance) { principalPaid = balance; emiPaid = interestPaid + principalPaid; }
+          balance -= principalPaid;
+          if (balance < 0.01) balance = 0;
+        }
+        outstandingBal = balance;
+      }
+
+    } else if (disbursalType === 'clp-fullemi') {
+      // ── TYPE C: CLP with Full-EMI ──
+      monthlyPaymentLabel = 'Full EMI';
+      if (m === 1) cumulativeDisbursed += trancheAmounts[0];
+      if (m === 13) cumulativeDisbursed += trancheAmounts[1];
+      if (m === 25) cumulativeDisbursed += trancheAmounts[2];
+      if (m === 37) cumulativeDisbursed += trancheAmounts[3];
+
+      if (m > constructionMonths) cumulativeDisbursed = Math.min(cumulativeDisbursed, loanAmount);
+
+      const netOutstanding = Math.max(0, cumulativeDisbursed - cumulativePrincipalPaid);
+      interestPaid = netOutstanding * r;
+      emiPaid = fullEMI;
+      principalPaid = Math.max(0, emiPaid - interestPaid);
+
+      cumulativePrincipalPaid += principalPaid;
+      outstandingBal = Math.max(0, cumulativeDisbursed - cumulativePrincipalPaid);
+      balance = outstandingBal;
+    }
+
+    totalInterestPaid += interestPaid;
+    totalPrincipalPaid += principalPaid;
+    totalEmisPaid += emiPaid;
+
+    schedule.push({ month: m, interestPaid, principalPaid, emiPaid, outstandingBal, isPreEmi });
+  }
+
+  const outstandingPrincipalToClose = disbursalType === 'clp-preemi'
+    ? (constructionMonths >= h ? cumulativeDisbursed : (balance || 0))
+    : (balance || 0);
+
+  // Cash flows for IRR
+  const cfs = [-downPaymentAmount];
+  for (let m = 1; m <= h; m++) {
+    let cf = -schedule[m - 1].emiPaid;
+    if (m === h) cf += salePrice - outstandingPrincipalToClose;
+    cfs.push(cf);
+  }
+
+  const monthlyIRR = calcMonthlyIRR(cfs);
+  const annualizedIRR = monthlyIRR !== null ? Math.pow(1 + monthlyIRR, 12) - 1 : null;
+
+  const totalCapitalInvested = downPaymentAmount + totalEmisPaid;
+  const netCashFromSale = salePrice - outstandingPrincipalToClose;
+  const netProfit = netCashFromSale - totalCapitalInvested;
+  const equityMultiple = totalCapitalInvested > 0 ? netCashFromSale / totalCapitalInvested : 0;
+
+  return {
+    purchasePrice, downPaymentAmount, loanAmount, fullEMI, totalEmisPaid,
+    totalPrincipalPaid, totalInterestPaid, totalCapitalInvested, salePrice,
+    outstandingPrincipalToClose, netCashFromSale, netProfit, annualizedIRR,
+    equityMultiple, totalPreEmiPaid, monthlyPaymentLabel,
+    disbursalType, constructionPeriod, h,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FORMATTING
+// ═══════════════════════════════════════════════════════════════
+
+function fmtINR(amount) {
+  try {
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
+  } catch (e) {
+    return '₹' + Math.round(amount).toLocaleString('en-IN');
+  }
+}
+
+function fmtINRShort(amount) {
+  const abs = Math.abs(amount);
+  if (abs >= 10000000) return '₹' + (amount / 10000000).toFixed(2) + ' Cr';
+  if (abs >= 100000) return '₹' + (amount / 100000).toFixed(2) + ' L';
+  return fmtINR(amount);
+}
+
+function fmtPct(v) {
+  return new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v) + '%';
+}
+
+function parseINR(str) {
+  const clean = str.replace(/[^0-9]/g, '');
+  const n = parseInt(clean, 10);
+  return isNaN(n) ? 0 : n;
+}
+
+function formatINRInput(num) {
+  return new Intl.NumberFormat('en-IN').format(num);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UI CONTROLLER
+// ═══════════════════════════════════════════════════════════════
+
+// DOM refs
+const $ = id => document.getElementById(id);
+const purchaseInput = $('purchasePriceInput');
+const purchaseRange = $('purchasePriceRange');
+const saleInput = $('salePriceInput');
+const saleRange = $('salePriceRange');
+const downSlider = $('downPaymentPct');
+const interestSlider = $('interestRate');
+const tenureSlider = $('loanTenure');
+const holdingSlider = $('holdingPeriod');
+const disbursalSelect = $('disbursalType');
+const constructionSlider = $('constructionPeriod');
+const clpOptions = $('clpOptions');
+
+function getInputs() {
+  const purchasePrice = parseINR(purchaseInput.value);
+  const salePrice = parseINR(saleInput.value);
+  const downPaymentPct = parseFloat(downSlider.value);
+  const interestRate = parseFloat(interestSlider.value);
+  const loanTenure = parseInt(tenureSlider.value, 10);
+  const holdingPeriod = parseInt(holdingSlider.value, 10);
+  const disbursalType = disbursalSelect.value;
+  const constructionPeriod = parseInt(constructionSlider.value, 10);
+  const tranchePcts = [
+    parseInt($('tranche0').value, 10) || 0,
+    parseInt($('tranche1').value, 10) || 0,
+    parseInt($('tranche2').value, 10) || 0,
+    parseInt($('tranche3').value, 10) || 0,
+  ];
+  return { purchasePrice, downPaymentPct, interestRate, loanTenure, holdingPeriod, salePrice, disbursalType, constructionPeriod, tranchePcts };
+}
+
+function syncSlidersToInputs() {
+  purchaseRange.value = parseINR(purchaseInput.value);
+  saleRange.value = parseINR(saleInput.value);
+}
+
+function syncInputsToSliders() {
+  purchaseInput.value = formatINRInput(parseInt(purchaseRange.value, 10));
+  saleInput.value = formatINRInput(parseInt(saleRange.value, 10));
+}
+
+function updateLabels(inputs) {
+  const { purchasePrice, downPaymentPct, interestRate, loanTenure, holdingPeriod, salePrice, disbursalType, constructionPeriod } = inputs;
+  $('purchaseWords').textContent = fmtINRShort(purchasePrice);
+  $('downPaymentLabel').textContent = downPaymentPct + '%';
+  const loanAmt = purchasePrice - (purchasePrice * downPaymentPct / 100);
+  $('downAmt').textContent = fmtINR(purchasePrice * downPaymentPct / 100);
+  $('loanAmt').textContent = fmtINR(loanAmt);
+  $('ltvPct').textContent = (100 - downPaymentPct);
+  $('interestLabel').textContent = interestRate.toFixed(1) + '%';
+  $('loanTenureLabel').textContent = loanTenure + ' Years';
+  $('holdingLabel').textContent = holdingPeriod + ' Years';
+  $('saleWords').textContent = fmtINRShort(salePrice);
+  $('constructionLabel').textContent = constructionPeriod + ' Years';
+
+  const multiplier = purchasePrice > 0 ? (salePrice / purchasePrice) : 0;
+  const appreciation = purchasePrice > 0 ? ((salePrice - purchasePrice) / purchasePrice) * 100 : 0;
+  const cagr = (purchasePrice > 0 && holdingPeriod > 0) ? Math.pow(salePrice / purchasePrice, 1 / holdingPeriod) - 1 : 0;
+  $('multiplierBadge').textContent = multiplier.toFixed(2) + 'x';
+  $('appreciationBadge').textContent = appreciation.toFixed(0) + '%';
+  $('cagrBadge').textContent = (cagr * 100).toFixed(2) + '%';
+
+  // CLP visibility
+  const isCLP = disbursalType !== 'upfront';
+  clpOptions.classList.toggle('hidden', !isCLP);
+
+  // Tranche sum
+  const pcts = [
+    parseInt($('tranche0').value, 10) || 0,
+    parseInt($('tranche1').value, 10) || 0,
+    parseInt($('tranche2').value, 10) || 0,
+    parseInt($('tranche3').value, 10) || 0,
+  ];
+  const sum = pcts.reduce((a, b) => a + b, 0);
+  $('trancheSum').textContent = sum;
+  $('trancheWarning').classList.toggle('hidden', sum === 100);
+}
+
+function renderOutputTable(outputs) {
+  const { purchasePrice, downPaymentAmount, loanAmount, fullEMI, totalEmisPaid,
+          totalPrincipalPaid, totalInterestPaid, totalCapitalInvested, salePrice,
+          outstandingPrincipalToClose, netCashFromSale, netProfit, annualizedIRR,
+          equityMultiple, totalPreEmiPaid, monthlyPaymentLabel,
+          disbursalType, constructionPeriod, h } = outputs;
+
+  // Get the first month's label for the monthly payment display
+  const isPreEmi = disbursalType === 'clp-preemi';
+  const monthlyDisplay = isPreEmi
+    ? ('Variable Pre-EMI → Full EMI at Month ' + (constructionPeriod * 12 + 1))
+    : ('Full EMI: ' + fmtINR(fullEMI) + '/mo');
+
+  const rows = [
+    { label: 'Property Purchase Price', value: fmtINR(purchasePrice), cls: '' },
+    { label: 'Down Payment Amount', value: fmtINR(downPaymentAmount) + ' <span class="text-4xs text-slate-400">(' + Math.round(downPaymentAmount / purchasePrice * 100) + '%)</span>', cls: '' },
+    { label: 'Loan Amount', value: fmtINR(loanAmount) + ' <span class="text-4xs text-slate-400">(' + Math.round(loanAmount / purchasePrice * 100) + '% LTV)</span>', cls: '' },
+    { label: 'Monthly Payment ' + (isPreEmi ? '(Variable Pre-EMI)' : '(Full EMI)'), value: isPreEmi ? monthlyDisplay : fmtINR(fullEMI) + '/mo', cls: 'bg-indigo-50/20 font-semibold text-indigo-900' },
+    { label: 'Total Payments Made to Bank', value: fmtINR(totalEmisPaid), cls: 'bg-slate-50/30 font-semibold text-slate-800' },
+    ...(disbursalType !== 'upfront' && totalPreEmiPaid > 0 ? [{ label: '<span class="pl-4 text-3xs text-sky-700"><span class="inline-block h-1.5 w-1.5 rounded-full bg-sky-400 mr-1"></span> Out of which: Pre-EMI Interest (during construction)</span>', value: fmtINR(totalPreEmiPaid), cls: 'bg-sky-50/30 text-sky-700' }] : []),
+    { label: '<span class="pl-4 text-3xs text-slate-500"><span class="inline-block h-1.5 w-1.5 rounded-full bg-blue-400 mr-1"></span> Out of which is Principal Paid</span>', value: fmtINR(totalPrincipalPaid), cls: 'bg-slate-50/10 text-3xs text-slate-500' },
+    { label: '<span class="pl-4 text-3xs text-slate-500"><span class="inline-block h-1.5 w-1.5 rounded-full bg-amber-400 mr-1"></span> Out of which is Interest Paid</span>', value: fmtINR(totalInterestPaid), cls: 'bg-slate-50/10 text-3xs text-slate-500' },
+    { label: 'Total Capital Invested (Down Payment + Total Payments)', value: fmtINR(totalCapitalInvested), cls: 'font-semibold text-slate-800' },
+    { label: 'Property Sale Price', value: fmtINR(salePrice), cls: '' },
+    { label: 'Outstanding Loan Principal Paid to Close Loan', value: fmtINR(outstandingPrincipalToClose), cls: 'text-amber-700' },
+    { label: 'Net Cash Received from Sale (Sale Price - Loan Clearance)', value: fmtINR(netCashFromSale), cls: 'font-semibold text-slate-800 bg-indigo-50/10' },
+    { label: 'Final Net Profit Pocketed (Net Cash Received - Total Capital Invested)', value: fmtINR(netProfit), cls: (netProfit >= 0 ? 'text-emerald-700' : 'text-rose-700') + ' font-bold bg-emerald-50/40' },
+    { label: 'Final Annualized IRR (%)', value: annualizedIRR !== null ? fmtPct(annualizedIRR * 100) : 'N/A', cls: 'bg-indigo-900 text-white font-bold text-emerald-400' },
+  ];
+
+  const tbody = $('outputTableBody');
+  tbody.innerHTML = rows.map(r =>
+    '<tr class="hover:bg-slate-50/40 ' + r.cls + '">' +
+      '<td class="px-4 py-2.5 text-xs font-medium">' + r.label + '</td>' +
+      '<td class="px-4 py-2.5 text-xs font-bold text-right font-mono">' + r.value + '</td>' +
+    '</tr>'
+  ).join('');
+}
+
+function updateKPI(outputs) {
+  $('kpiIrr').textContent = outputs.annualizedIRR !== null ? fmtPct(outputs.annualizedIRR * 100) : 'N/A';
+  $('kpiIrr').className = (outputs.annualizedIRR !== null ? 'text-xl sm:text-2xl font-extrabold font-mono mt-1 text-emerald-400' : 'text-xl sm:text-2xl font-extrabold font-mono mt-1 text-slate-400');
+  $('kpiProfit').textContent = fmtINR(outputs.netProfit);
+  $('kpiProfit').className = 'text-lg sm:text-xl font-extrabold font-mono mt-1 ' + (outputs.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600');
+  $('kpiEquity').textContent = outputs.equityMultiple.toFixed(2) + 'x';
+  $('kpiCapital').textContent = fmtINR(outputs.totalCapitalInvested);
+  $('kpiCapitalLabel').textContent = outputs.disbursalType === 'clp-preemi' ? 'Down Payment + Pre-EMI + Full EMIs' : 'Down Payment + EMIs';
+  $('highlightDown').textContent = fmtINR(outputs.downPaymentAmount);
+}
+
+function computeAndRender() {
+  const inputs = getInputs();
+  updateLabels(inputs);
+  const outputs = runModel(inputs);
+  renderOutputTable(outputs);
+  updateKPI(outputs);
+}
+
+// ─── Event Binding ───
+
+function bindInput(id, event, handler) {
+  const el = $(id);
+  if (el) el.addEventListener(event, handler);
+}
+
+// Purchase price: sync between text and range
+purchaseInput.addEventListener('input', () => {
+  const val = parseINR(purchaseInput.value);
+  purchaseRange.value = val;
+  $('purchaseWords').textContent = fmtINRShort(val);
+  computeAndRender();
+});
+purchaseRange.addEventListener('input', () => {
+  purchaseInput.value = formatINRInput(parseInt(purchaseRange.value, 10));
+  computeAndRender();
+});
+
+// Sale price: sync between text and range
+saleInput.addEventListener('input', () => {
+  const val = parseINR(saleInput.value);
+  saleRange.value = val;
+  $('saleWords').textContent = fmtINRShort(val);
+  computeAndRender();
+});
+saleRange.addEventListener('input', () => {
+  saleInput.value = formatINRInput(parseInt(saleRange.value, 10));
+  computeAndRender();
+});
+
+// Sliders
+['downPaymentPct', 'interestRate', 'loanTenure', 'holdingPeriod', 'constructionPeriod'].forEach(id => {
+  bindInput(id, 'input', computeAndRender);
+});
+
+// Disbursal type
+disbursalSelect.addEventListener('change', computeAndRender);
+
+// Tranche inputs
+['tranche0', 'tranche1', 'tranche2', 'tranche3'].forEach(id => {
+  bindInput(id, 'input', computeAndRender);
+});
+
+// Initial render
+computeAndRender();
+</script>
+</body>
+</html>

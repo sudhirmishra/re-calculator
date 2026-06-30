@@ -130,6 +130,9 @@ export function runFinancialModel(inputs: CalculatorInputs): CalculatorOutputs {
     enableRental,
     rentalYield,
     rentalStartYear,
+    disbursalType,
+    constructionPeriod,
+    tranchePcts,
   } = inputs;
 
   const downPaymentAmount = purchasePrice * (downPaymentPct / 100);
@@ -138,8 +141,10 @@ export function runFinancialModel(inputs: CalculatorInputs): CalculatorOutputs {
   const r = (interestRate / 100) / 12;
   const n = loanTenure * 12;
   const h = holdingPeriod * 12;
+  const isClp = disbursalType === 'clp' || disbursalType === 'clp-fullemi';
+  const constructionMonths = isClp ? constructionPeriod * 12 : 0;
 
-  // Monthly EMI Calculation
+  // Monthly EMI Calculation (full EMI based on full loan amount)
   let monthlyEmi = 0;
   if (loanAmount > 0) {
     if (r > 0) {
@@ -150,35 +155,87 @@ export function runFinancialModel(inputs: CalculatorInputs): CalculatorOutputs {
   }
 
   const amortizationSchedule: AmortizationMonth[] = [];
-  let currentBalance = loanAmount;
   let totalInterestPaid = 0;
   let totalPrincipalPaid = 0;
   let totalEmisPaid = 0;
   let totalRentalEarned = 0;
+  let totalPreEmiInterest = 0;
+
+  // CLP state
+  const trancheAmounts: [number, number, number, number] = [
+    loanAmount * tranchePcts[0] / 100,
+    loanAmount * tranchePcts[1] / 100,
+    loanAmount * tranchePcts[2] / 100,
+    loanAmount * tranchePcts[3] / 100,
+  ];
+  let cumulativeDisbursed = isClp ? trancheAmounts[0] : loanAmount;
+  let postConstructionBalance = 0;
+  let inPostConstruction = false;
+  let cumulativePrincipalPaid = 0;
 
   for (let m = 1; m <= h; m++) {
     let interestPaid = 0;
     let principalPaid = 0;
     let emiPaid = 0;
+    let outstandingBalance = 0;
+    let isPreEmi = false;
 
-    if (m <= n && currentBalance > 0) {
-      interestPaid = currentBalance * r;
-      emiPaid = monthlyEmi;
-      principalPaid = emiPaid - interestPaid;
+    if (disbursalType === 'clp' && m <= constructionMonths) {
+      // ── Pre-EMI Phase ──
+      isPreEmi = true;
 
-      if (principalPaid > currentBalance) {
-        principalPaid = currentBalance;
-        emiPaid = interestPaid + principalPaid;
-      }
+      // Add tranches at start of years 2, 3, 4
+      if (m === 13) cumulativeDisbursed += trancheAmounts[1];
+      if (m === 25) cumulativeDisbursed += trancheAmounts[2];
+      if (m === 37) cumulativeDisbursed += trancheAmounts[3];
 
-      currentBalance -= principalPaid;
-      if (currentBalance < 0.01) {
-        currentBalance = 0;
-      }
-    } else {
-      interestPaid = 0;
+      interestPaid = cumulativeDisbursed * r;
+      emiPaid = interestPaid;
       principalPaid = 0;
-      emiPaid = 0;
+      outstandingBalance = cumulativeDisbursed;
+      totalPreEmiInterest += interestPaid;
+    } else if (disbursalType === 'clp-fullemi') {
+      // ── CLP Full-EMI (full EMI from start, applied against cumulative disbursed) ──
+
+      // Add tranches at start of years 2, 3, 4
+      if (m === 13) cumulativeDisbursed += trancheAmounts[1];
+      if (m === 25) cumulativeDisbursed += trancheAmounts[2];
+      if (m === 37) cumulativeDisbursed += trancheAmounts[3];
+
+      // After construction, cap disbursed at full loan amount
+      if (m > constructionMonths) {
+        cumulativeDisbursed = Math.min(cumulativeDisbursed, loanAmount);
+      }
+
+      const netOutstanding = Math.max(0, cumulativeDisbursed - cumulativePrincipalPaid);
+      interestPaid = netOutstanding * r;
+      emiPaid = monthlyEmi;
+      principalPaid = Math.max(0, emiPaid - interestPaid);
+
+      cumulativePrincipalPaid += principalPaid;
+      outstandingBalance = Math.max(0, cumulativeDisbursed - cumulativePrincipalPaid);
+    } else {
+      // ── Post-Construction / Standard Full EMI ──
+      if (!inPostConstruction) {
+        postConstructionBalance = loanAmount;
+        inPostConstruction = true;
+      }
+
+      if (postConstructionBalance > 0.01) {
+        interestPaid = postConstructionBalance * r;
+        emiPaid = monthlyEmi;
+        principalPaid = emiPaid - interestPaid;
+
+        if (principalPaid > postConstructionBalance) {
+          principalPaid = postConstructionBalance;
+          emiPaid = interestPaid + principalPaid;
+        }
+
+        postConstructionBalance -= principalPaid;
+        if (postConstructionBalance < 0.01) postConstructionBalance = 0;
+      }
+
+      outstandingBalance = postConstructionBalance;
     }
 
     // Accumulate rental income
@@ -197,24 +254,26 @@ export function runFinancialModel(inputs: CalculatorInputs): CalculatorOutputs {
       interestPaid,
       principalPaid,
       emiPaid,
-      outstandingBalance: currentBalance,
+      outstandingBalance,
       rentEarned,
       cashFlow: -emiPaid + rentEarned,
+      isPreEmi,
     });
   }
 
-  const outstandingPrincipalToClose = currentBalance; // Balance at holdingPeriod end
+  const outstandingPrincipalToClose = disbursalType === 'clp-fullemi'
+    ? Math.max(0, cumulativeDisbursed - cumulativePrincipalPaid)
+    : disbursalType === 'clp'
+      ? (constructionMonths >= h ? cumulativeDisbursed : postConstructionBalance)
+      : postConstructionBalance;
 
   // Build the Cash Flows Array for IRR
-  // Month 0: - (Down Payment)
-  // Month 1 to h-1: - (Monthly EMI) + (Monthly Rent, if active)
-  // Month h: - (Monthly EMI) + (Monthly Rent, if active) + Sale Price - Outstanding Principal
   const cashFlows: number[] = [];
   cashFlows.push(-downPaymentAmount);
 
   for (let m = 1; m <= h; m++) {
     const amort = amortizationSchedule[m - 1];
-    let cf = amort.cashFlow; // -emiPaid + rentEarned
+    let cf = amort.cashFlow;
     if (m === h) {
       cf += salePrice - outstandingPrincipalToClose;
     }
@@ -230,8 +289,6 @@ export function runFinancialModel(inputs: CalculatorInputs): CalculatorOutputs {
   const netProfit = netCashFromSale + totalRentalEarned - totalCapitalInvested;
 
   // Equity Multiple = (Total cash inflows) / (Total cash outflows)
-  // Outflows: Down Payment + EMIs
-  // Inflows: Rent + Net Cash from Sale
   const totalInflows = totalRentalEarned + netCashFromSale;
   const equityMultiple = totalCapitalInvested > 0 ? totalInflows / totalCapitalInvested : 0;
 
@@ -283,5 +340,8 @@ export function runFinancialModel(inputs: CalculatorInputs): CalculatorOutputs {
     equityMultiple,
     amortizationSchedule,
     yearlySummary,
+    totalPreEmiInterest,
+    disbursalType,
+    constructionPeriod,
   };
 }

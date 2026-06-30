@@ -6,3 +6,6 @@ coverage/
 *.log
 .env*
 !.env.example
+devbox.json
+devbox.lock
+.devbox-server.log

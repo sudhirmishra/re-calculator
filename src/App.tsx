@@ -35,7 +35,10 @@ const PRESETS = [
       salePrice: 20000000,
       enableRental: true,
       rentalYield: 3.0,
-      rentalStartYear: 4
+      rentalStartYear: 4,
+      disbursalType: 'upfront',
+      constructionPeriod: 4,
+      tranchePcts: [25, 25, 25, 25],
     }
   },
   {
@@ -49,21 +52,44 @@ const PRESETS = [
       salePrice: 42000000,
       enableRental: true,
       rentalYield: 2.8,
-      rentalStartYear: 1
+      rentalStartYear: 1,
+      disbursalType: 'upfront',
+      constructionPeriod: 4,
+      tranchePcts: [25, 25, 25, 25],
     }
   },
   {
-    name: "Commercial Property (High Yield)",
+    name: "CLP Under-Construction (40/30/20/10)",
     inputs: {
-      purchasePrice: 50000000,
-      downPaymentPct: 30,
-      interestRate: 9.0,
-      loanTenure: 15,
+      purchasePrice: 10000000,
+      downPaymentPct: 10,
+      interestRate: 8.0,
+      loanTenure: 20,
       holdingPeriod: 10,
-      salePrice: 75000000,
-      enableRental: true,
-      rentalYield: 6.5,
-      rentalStartYear: 1
+      salePrice: 20000000,
+      enableRental: false,
+      rentalYield: 3.0,
+      rentalStartYear: 4,
+      disbursalType: 'clp',
+      constructionPeriod: 4,
+      tranchePcts: [40, 30, 20, 10],
+    }
+  },
+  {
+    name: "CLP Full-EMI Under-Construction (40/30/20/10)",
+    inputs: {
+      purchasePrice: 10000000,
+      downPaymentPct: 10,
+      interestRate: 8.0,
+      loanTenure: 20,
+      holdingPeriod: 10,
+      salePrice: 20000000,
+      enableRental: false,
+      rentalYield: 3.0,
+      rentalStartYear: 4,
+      disbursalType: 'clp-fullemi',
+      constructionPeriod: 4,
+      tranchePcts: [40, 30, 20, 10],
     }
   },
   {
@@ -77,7 +103,10 @@ const PRESETS = [
       salePrice: 24000000,
       enableRental: true,
       rentalYield: 3.5,
-      rentalStartYear: 1
+      rentalStartYear: 1,
+      disbursalType: 'upfront',
+      constructionPeriod: 4,
+      tranchePcts: [25, 25, 25, 25],
     }
   }
 ];
@@ -94,11 +123,19 @@ export default function App() {
   const [rentalYield, setRentalYield] = useState<number>(3.0);
   const [rentalStartYear, setRentalStartYear] = useState<number>(4);
 
+  // CLP / Disbursal type state
+  const [disbursalType, setDisbursalType] = useState<'upfront' | 'clp' | 'clp-fullemi'>('upfront');
+  const [constructionPeriod, setConstructionPeriod] = useState<number>(4);
+  const [tranchePcts, setTranchePcts] = useState<[number, number, number, number]>([25, 25, 25, 25]);
+
   // Active Tab for Right Side
   const [activeTab, setActiveTab] = useState<'summary' | 'charts' | 'schedule'>('summary');
   
   // Interactive chart state for showing tooltip details
   const [hoveredYear, setHoveredYear] = useState<number | null>(null);
+
+  // Compact slider: which parameter's slider is expanded
+  const [editingParam, setEditingParam] = useState<string | null>(null);
 
   // Help Modal/Tooltip state
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
@@ -141,7 +178,10 @@ export default function App() {
       salePrice,
       enableRental,
       rentalYield,
-      rentalStartYear
+      rentalStartYear,
+      disbursalType,
+      constructionPeriod,
+      tranchePcts,
     };
   }, [
     purchasePrice,
@@ -152,7 +192,10 @@ export default function App() {
     salePrice,
     enableRental,
     rentalYield,
-    rentalStartYear
+    rentalStartYear,
+    disbursalType,
+    constructionPeriod,
+    tranchePcts,
   ]);
 
   const outputs: CalculatorOutputs = useMemo(() => {
@@ -170,6 +213,9 @@ export default function App() {
     setEnableRental(preset.inputs.enableRental);
     setRentalYield(preset.inputs.rentalYield);
     setRentalStartYear(preset.inputs.rentalStartYear);
+    setDisbursalType(preset.inputs.disbursalType);
+    setConstructionPeriod(preset.inputs.constructionPeriod);
+    setTranchePcts(preset.inputs.tranchePcts);
   };
 
   // Convert number to Indian words
@@ -238,7 +284,7 @@ export default function App() {
 
   // Download schedule as CSV helper
   const handleDownloadCSV = () => {
-    const headers = ['Month', 'EMI Paid (INR)', 'Interest Paid (INR)', 'Principal Paid (INR)', 'Outstanding Loan Balance (INR)', 'Rental Income (INR)', 'Monthly Cash Flow (INR)'];
+    const headers = ['Month', 'EMI Paid (INR)', 'Interest Paid (INR)', 'Principal Paid (INR)', 'Outstanding Loan Balance (INR)', 'Rental Income (INR)', 'Monthly Cash Flow (INR)', 'Type'];
     const rows = outputs.amortizationSchedule.map(s => [
       s.month,
       Math.round(s.emiPaid),
@@ -246,7 +292,8 @@ export default function App() {
       Math.round(s.principalPaid),
       Math.round(s.outstandingBalance),
       Math.round(s.rentEarned),
-      Math.round(s.cashFlow)
+      Math.round(s.cashFlow),
+      s.isPreEmi ? 'Pre-EMI' : 'Full EMI'
     ]);
     
     const csvContent = "data:text/csv;charset=utf-8," 
@@ -290,9 +337,9 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased">
+    <div className="h-screen flex flex-col overflow-hidden bg-slate-50 text-slate-900 font-sans antialiased">
       {/* Premium Elegant Header */}
-      <header className="sticky top-0 z-40 bg-white border-b border-slate-200 px-4 py-4 md:px-8">
+      <header className="shrink-0 z-40 bg-white border-b border-slate-200 px-4 py-4 md:px-8">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-indigo-600 flex items-center justify-center text-white shadow-sm shadow-indigo-100">
@@ -329,40 +376,32 @@ export default function App() {
         </div>
       </header>
 
+      {/* Quick Presets Compact Bar */}
+      <div className="shrink-0 bg-white border-b border-slate-200 overflow-x-auto">
+        <div className="max-w-7xl mx-auto flex items-center gap-2 px-4 md:px-8 py-2">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">
+            <Briefcase className="h-3 w-3 inline mr-1" />Scenarios:
+          </span>
+          {PRESETS.map((preset, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => applyPreset(preset)}
+              className="shrink-0 px-3 py-1 rounded-md border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 transition-all text-[11px] font-semibold text-slate-600 hover:text-indigo-700 cursor-pointer whitespace-nowrap"
+            >
+              {preset.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Main Content Dashboard */}
-      <main className="max-w-7xl mx-auto p-4 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <main className="flex-1 overflow-hidden max-w-7xl mx-auto w-full p-4 md:p-8">
+        <div className="h-full grid grid-cols-1 lg:grid-cols-12 gap-8 overflow-hidden">
         
         {/* Left Column: Input Panel (cols 1-5) */}
-        <section className="lg:col-span-5 space-y-6">
+        <section className="lg:col-span-5 min-h-0 space-y-6 overflow-y-auto overscroll-contain">
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-6">
-            
-            {/* Presets Row */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                  <Briefcase className="h-3 w-3" /> Quick Investment Scenarios
-                </h3>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {PRESETS.map((preset, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => applyPreset(preset)}
-                    className="p-2.5 text-left rounded-lg border border-slate-100 bg-slate-50/50 hover:bg-slate-100 hover:border-indigo-300 transition-all text-xs cursor-pointer group"
-                  >
-                    <div className="font-bold text-slate-700 group-hover:text-indigo-700 line-clamp-1">
-                      {preset.name.split(' (')[0]}
-                    </div>
-                    <div className="text-slate-400 text-3xs mt-0.5 font-medium">
-                      ₹{(preset.inputs.purchasePrice / 10000000).toFixed(1)}Cr · {preset.inputs.downPaymentPct}% Down
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <hr className="border-slate-100" />
 
             <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
               <Calculator className="h-4 w-4 text-indigo-600" /> Model Parameters
@@ -375,85 +414,97 @@ export default function App() {
                   Capital Inflow
                 </h3>
               </div>
-                
+                 
                 {/* Purchase Price Input */}
                 <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <label className="text-[11px] font-semibold text-slate-600 flex items-center gap-1">
-                      Property Purchase Price (₹)
+                  <div className="flex items-center gap-2">
+                    <label className="text-[11px] font-semibold text-slate-600 shrink-0">
+                      Purchase Price
                     </label>
-                    <span className="text-xs font-bold text-indigo-600 font-mono">
-                      {formatIndianWords(purchasePrice)}
-                    </span>
-                  </div>
-                  <div className="relative rounded shadow-sm">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <span className="text-slate-400 text-sm">₹</span>
-                    </div>
                     <input
-                      type="text"
-                      value={purchasePriceInput}
-                      onChange={handlePurchasePriceChange}
-                      placeholder="1,00,00,000"
-                      className="block w-full pl-8 pr-3 py-2 text-sm font-semibold bg-slate-50 border border-slate-200 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                      type="range"
+                      min="1000000"
+                      max="100000000"
+                      step="500000"
+                      value={purchasePrice}
+                      onChange={(e) => setPurchasePriceInput(new Intl.NumberFormat('en-IN').format(parseInt(e.target.value, 10)))}
+                      className="flex-1 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                     />
+                    <button
+                      onClick={() => setEditingParam(editingParam === 'purchasePrice' ? null : 'purchasePrice')}
+                      className="text-xs font-bold text-indigo-600 font-mono cursor-pointer hover:text-indigo-800 transition-colors shrink-0 w-24 text-right underline decoration-dotted underline-offset-2"
+                    >
+                      {formatIndianWords(purchasePrice)}
+                    </button>
                   </div>
-                  <input
-                    type="range"
-                    min="1000000"
-                    max="100000000"
-                    step="500000"
-                    value={purchasePrice}
-                    onChange={(e) => setPurchasePriceInput(new Intl.NumberFormat('en-IN').format(parseInt(e.target.value, 10)))}
-                    className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                  />
+                  {editingParam === 'purchasePrice' && (
+                    <div className="relative rounded shadow-sm">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="text-slate-400 text-sm">₹</span>
+                      </div>
+                      <input
+                        type="text"
+                        value={purchasePriceInput}
+                        onChange={handlePurchasePriceChange}
+                        placeholder="1,00,00,000"
+                        className="block w-full pl-8 pr-3 py-1.5 text-sm font-semibold bg-slate-50 border border-slate-200 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Target Sale Price Input */}
                 <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <label className="text-[11px] font-semibold text-slate-600">
-                      Target Property Sale Price (₹)
+                  <div className="flex items-center gap-2">
+                    <label className="text-[11px] font-semibold text-slate-600 shrink-0">
+                      Sale Price
                     </label>
-                    <span className="text-xs font-bold text-indigo-600 font-mono">
-                      {formatIndianWords(salePrice)}
-                    </span>
-                  </div>
-                  <div className="relative rounded shadow-sm">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <span className="text-slate-400 text-sm">₹</span>
-                    </div>
                     <input
-                      type="text"
-                      value={salePriceInput}
-                      onChange={handleSalePriceChange}
-                      placeholder="2,00,00,000"
-                      className="block w-full pl-8 pr-3 py-2 text-sm font-semibold bg-slate-50 border border-slate-200 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                      type="range"
+                      min="1000000"
+                      max="200000000"
+                      step="500000"
+                      value={salePrice}
+                      onChange={(e) => setSalePriceInput(new Intl.NumberFormat('en-IN').format(parseInt(e.target.value, 10)))}
+                      className="flex-1 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                     />
+                    <button
+                      onClick={() => setEditingParam(editingParam === 'salePrice' ? null : 'salePrice')}
+                      className="text-xs font-bold text-indigo-600 font-mono cursor-pointer hover:text-indigo-800 transition-colors shrink-0 w-24 text-right underline decoration-dotted underline-offset-2"
+                    >
+                      {formatIndianWords(salePrice)}
+                    </button>
                   </div>
-                  <input
-                    type="range"
-                    min="1000000"
-                    max="200000000"
-                    step="500000"
-                    value={salePrice}
-                    onChange={(e) => setSalePriceInput(new Intl.NumberFormat('en-IN').format(parseInt(e.target.value, 10)))}
-                    className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                  />
-                  <div className="flex justify-between items-center text-3xs text-slate-400">
-                    <span>
-                      Multiplier: {(purchasePrice > 0 ? salePrice / purchasePrice : 0).toFixed(2)}x
-                    </span>
-                    <span>
-                      Appreciation: {purchasePrice > 0 ? (((salePrice - purchasePrice) / purchasePrice) * 100).toFixed(0) : 0}%
-                    </span>
-                  </div>
-                  <div className="mt-1.5 flex items-center justify-between bg-indigo-50 border border-indigo-100 rounded px-2 py-1 text-3xs">
-                    <span className="font-semibold text-indigo-900">Organic Asset CAGR</span>
-                    <span className="font-extrabold text-indigo-700 font-mono">
-                      {propertyAppreciationCAGR.toFixed(2)}%
-                    </span>
-                  </div>
+                  {editingParam === 'salePrice' && (
+                    <div className="space-y-2">
+                      <div className="relative rounded shadow-sm">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <span className="text-slate-400 text-sm">₹</span>
+                        </div>
+                        <input
+                          type="text"
+                          value={salePriceInput}
+                          onChange={handleSalePriceChange}
+                          placeholder="2,00,00,000"
+                          className="block w-full pl-8 pr-3 py-1.5 text-sm font-semibold bg-slate-50 border border-slate-200 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                        />
+                      </div>
+                      <div className="flex justify-between items-center text-3xs text-slate-400">
+                        <span>
+                          Multiplier: {(purchasePrice > 0 ? salePrice / purchasePrice : 0).toFixed(2)}x
+                        </span>
+                        <span>
+                          Appreciation: {purchasePrice > 0 ? (((salePrice - purchasePrice) / purchasePrice) * 100).toFixed(0) : 0}%
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between bg-indigo-50 border border-indigo-100 rounded px-2 py-1 text-3xs">
+                        <span className="font-semibold text-indigo-900">Organic Asset CAGR</span>
+                        <span className="font-extrabold text-indigo-700 font-mono">
+                          {propertyAppreciationCAGR.toFixed(2)}%
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
               {/* Parameter Group 2: Debt Financing */}
@@ -466,72 +517,72 @@ export default function App() {
 
                 {/* Down Payment % Slider */}
                 <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <label className="text-[11px] font-semibold text-slate-600">
-                      Down Payment Percentage (%)
+                  <div className="flex items-center gap-2">
+                    <label className="text-[11px] font-semibold text-slate-600 shrink-0">
+                      Down Payment
                     </label>
-                    <span className="text-xs font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded font-mono">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      step="5"
+                      value={downPaymentPct}
+                      onChange={(e) => setDownPaymentPct(parseInt(e.target.value, 10))}
+                      className="flex-1 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                    />
+                    <span className="text-xs font-bold text-slate-900 font-mono shrink-0 w-12 text-right">
                       {downPaymentPct}%
                     </span>
                   </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    step="5"
-                    value={downPaymentPct}
-                    onChange={(e) => setDownPaymentPct(parseInt(e.target.value, 10))}
-                    className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                  />
                   <div className="flex justify-between items-center text-3xs text-slate-500 font-medium">
-                    <span>Down Payment Amt: <strong className="text-slate-800">{formatLargeINR(outputs.downPaymentAmount)}</strong></span>
-                    <span>Loan Amt (LTV): <strong className="text-slate-800">{formatLargeINR(outputs.loanAmount)} ({100 - downPaymentPct}%)</strong></span>
+                    <span>Down: <strong className="text-slate-800">{formatLargeINR(outputs.downPaymentAmount)}</strong></span>
+                    <span>Loan (LTV): <strong className="text-slate-800">{formatLargeINR(outputs.loanAmount)} ({100 - downPaymentPct}%)</strong></span>
                   </div>
                 </div>
 
                 {/* Interest Rate */}
                 <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <label className="text-[11px] font-semibold text-slate-600">
-                      Loan Interest Rate (Annual %)
+                  <div className="flex items-center gap-2">
+                    <label className="text-[11px] font-semibold text-slate-600 shrink-0">
+                      Interest Rate
                     </label>
-                    <span className="text-xs font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded font-mono">
+                    <input
+                      type="range"
+                      min="0"
+                      max="20"
+                      step="0.1"
+                      value={interestRate}
+                      onChange={(e) => setInterestRate(parseFloat(e.target.value))}
+                      className="flex-1 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                    />
+                    <span className="text-xs font-bold text-slate-900 font-mono shrink-0 w-12 text-right">
                       {interestRate.toFixed(1)}%
                     </span>
                   </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="20"
-                    step="0.1"
-                    value={interestRate}
-                    onChange={(e) => setInterestRate(parseFloat(e.target.value))}
-                    className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                  />
                 </div>
 
                 {/* Loan Tenure */}
                 <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <label className="text-[11px] font-semibold text-slate-600">
-                      Loan Tenure (Years)
+                  <div className="flex items-center gap-2">
+                    <label className="text-[11px] font-semibold text-slate-600 shrink-0">
+                      Loan Tenure
                     </label>
-                    <span className="text-xs font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded font-mono">
-                      {loanTenure} Years
+                    <input
+                      type="range"
+                      min="5"
+                      max="30"
+                      step="1"
+                      value={loanTenure}
+                      onChange={(e) => setLoanTenure(parseInt(e.target.value, 10))}
+                      className="flex-1 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                    />
+                    <span className="text-xs font-bold text-slate-900 font-mono shrink-0 w-16 text-right">
+                      {loanTenure}y
                     </span>
                   </div>
-                  <input
-                    type="range"
-                    min="5"
-                    max="30"
-                    step="1"
-                    value={loanTenure}
-                    onChange={(e) => setLoanTenure(parseInt(e.target.value, 10))}
-                    className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                  />
                   {outputs.monthlyEmi > 0 && (
-                    <div className="bg-indigo-50/50 p-2 rounded border border-indigo-100 text-3xs text-indigo-900 flex justify-between items-center">
-                      <span className="font-semibold">Monthly EMI Payment:</span>
+                    <div className="bg-indigo-50/50 p-1.5 rounded border border-indigo-100 text-3xs text-indigo-900 flex justify-between items-center">
+                      <span className="font-semibold">Monthly EMI:</span>
                       <strong className="font-extrabold font-mono">{formatLargeINR(outputs.monthlyEmi)}/mo</strong>
                     </div>
                   )}
@@ -548,23 +599,23 @@ export default function App() {
 
                 {/* Holding Period */}
                 <div className="space-y-1">
-                  <div className="flex justify-between items-center">
-                    <label className="text-[11px] font-semibold text-slate-600">
-                      Holding Period (Years)
+                  <div className="flex items-center gap-2">
+                    <label className="text-[11px] font-semibold text-slate-600 shrink-0">
+                      Holding Period
                     </label>
-                    <span className="text-xs font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded font-mono">
-                      {holdingPeriod} Years
+                    <input
+                      type="range"
+                      min="1"
+                      max="20"
+                      step="1"
+                      value={holdingPeriod}
+                      onChange={(e) => setHoldingPeriod(parseInt(e.target.value, 10))}
+                      className="flex-1 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                    />
+                    <span className="text-xs font-bold text-slate-900 font-mono shrink-0 w-16 text-right">
+                      {holdingPeriod}y
                     </span>
                   </div>
-                  <input
-                    type="range"
-                    min="1"
-                    max="20"
-                    step="1"
-                    value={holdingPeriod}
-                    onChange={(e) => setHoldingPeriod(parseInt(e.target.value, 10))}
-                    className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                  />
                   {holdingPeriod > loanTenure && (
                     <div className="text-3xs text-amber-600 bg-amber-50 px-2.5 py-2 rounded border border-amber-100">
                       Note: Holding Period is longer than the loan tenure. The loan will be fully repaid in Year {loanTenure}.
@@ -592,23 +643,23 @@ export default function App() {
                   <div className="pt-3 border-t border-slate-100 space-y-3">
                     {/* Rental Yield */}
                     <div className="space-y-1">
-                      <div className="flex justify-between items-center">
-                        <label className="text-[11px] font-semibold text-slate-500">
-                          Rental Yield (% of Purchase Price/yr)
+                      <div className="flex items-center gap-2">
+                        <label className="text-[11px] font-semibold text-slate-500 shrink-0">
+                          Rental Yield
                         </label>
-                        <span className="text-xs font-bold text-slate-950 font-mono">
+                        <input
+                          type="range"
+                          min="0.5"
+                          max="10"
+                          step="0.1"
+                          value={rentalYield}
+                          onChange={(e) => setRentalYield(parseFloat(e.target.value))}
+                          className="flex-1 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                        />
+                        <span className="text-xs font-bold text-slate-950 font-mono shrink-0 w-12 text-right">
                           {rentalYield.toFixed(1)}%
                         </span>
                       </div>
-                      <input
-                        type="range"
-                        min="0.5"
-                        max="10"
-                        step="0.1"
-                        value={rentalYield}
-                        onChange={(e) => setRentalYield(parseFloat(e.target.value))}
-                        className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                      />
                       <div className="flex justify-between text-3xs text-slate-400 font-medium">
                         <span>Annual: {formatLargeINR(purchasePrice * (rentalYield / 100))}</span>
                         <span>Monthly: {formatLargeINR((purchasePrice * (rentalYield / 100)) / 12)}/mo</span>
@@ -617,26 +668,158 @@ export default function App() {
 
                     {/* Rental Start Year */}
                     <div className="space-y-1">
-                      <div className="flex justify-between items-center">
-                        <label className="text-[11px] font-semibold text-slate-500">
-                          Rental Start Year
+                      <div className="flex items-center gap-2">
+                        <label className="text-[11px] font-semibold text-slate-500 shrink-0">
+                          Start Year
                         </label>
-                        <span className="text-xs font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded font-mono">
+                        <input
+                          type="range"
+                          min="1"
+                          max={holdingPeriod}
+                          step="1"
+                          value={rentalStartYear}
+                          onChange={(e) => setRentalStartYear(parseInt(e.target.value, 10))}
+                          className="flex-1 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                        />
+                        <span className="text-xs font-bold text-slate-900 font-mono shrink-0 w-16 text-right">
                           Year {rentalStartYear}
                         </span>
                       </div>
-                      <input
-                        type="range"
-                        min="1"
-                        max={holdingPeriod}
-                        step="1"
-                        value={rentalStartYear}
-                        onChange={(e) => setRentalStartYear(parseInt(e.target.value, 10))}
-                        className="w-full h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                      />
                       <p className="text-3xs text-slate-400">
                         Rental income begins in Month {((rentalStartYear - 1) * 12) + 1}. No rent accumulated before this.
                       </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Section 4: Disbursal Structure */}
+              <div className="space-y-4">
+                <div className="border-b border-slate-100 pb-2 pt-2">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                    4. Disbursal Structure
+                  </h3>
+                </div>
+
+                {/* Disbursal Type Tabs */}
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-600 mb-2 block">
+                    Disbursal Type
+                  </label>
+                  <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
+                    <button
+                      onClick={() => setDisbursalType('upfront')}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                        disbursalType === 'upfront'
+                          ? 'bg-white text-indigo-700 shadow-xs border border-slate-150'
+                          : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      <ArrowRightLeft className="h-4 w-4" />
+                      Upfront
+                    </button>
+                    <button
+                      onClick={() => setDisbursalType('clp')}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                        disbursalType === 'clp'
+                          ? 'bg-white text-indigo-700 shadow-xs border border-slate-150'
+                          : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      <Building2 className="h-4 w-4" />
+                      CLP Pre-EMI
+                    </button>
+                    <button
+                      onClick={() => setDisbursalType('clp-fullemi')}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                        disbursalType === 'clp-fullemi'
+                          ? 'bg-white text-indigo-700 shadow-xs border border-slate-150'
+                          : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      <Building2 className="h-4 w-4" />
+                      CLP Full-EMI
+                    </button>
+                  </div>
+                </div>
+
+                {disbursalType !== 'upfront' && (
+                  <div className="space-y-4 pl-3 border-l-2 border-indigo-200">
+                    {/* Construction Period */}
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <label className="text-[11px] font-semibold text-slate-600 shrink-0">
+                          Construction
+                        </label>
+                        <input
+                          type="range"
+                          min="1"
+                          max="7"
+                          step="1"
+                          value={constructionPeriod}
+                          onChange={(e) => setConstructionPeriod(parseInt(e.target.value, 10))}
+                          className="flex-1 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                        />
+                        <span className="text-xs font-bold text-slate-900 font-mono shrink-0 w-16 text-right">
+                          {constructionPeriod}y
+                        </span>
+                      </div>
+                      {disbursalType === 'clp' && (
+                        <p className="text-3xs text-slate-400">
+                          During construction, only Pre-EMI (interest) is paid on disbursed amount.
+                        </p>
+                      )}
+                      {disbursalType === 'clp-fullemi' && (
+                        <p className="text-3xs text-slate-400">
+                          Full EMI is paid from start, applied against the cumulative amount disbursed so far.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Tranche Schedule */}
+                    <div className="space-y-2">
+                      <label className="text-[11px] font-semibold text-slate-600">
+                        Tranche Disbursement Schedule (% of Loan)
+                      </label>
+                      <div className="grid grid-cols-4 gap-2">
+                        {[
+                          { label: 'Year 0', idx: 0 },
+                          { label: 'Year 1', idx: 1 },
+                          { label: 'Year 2', idx: 2 },
+                          { label: 'Year 3', idx: 3 },
+                        ].map((t) => (
+                          <div key={t.idx} className="space-y-1">
+                            <span className="text-3xs font-semibold text-slate-500 block text-center">
+                              {t.label}
+                            </span>
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={tranchePcts[t.idx]}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value, 10);
+                                if (!isNaN(val) && val >= 0 && val <= 100) {
+                                  const newPcts: [number, number, number, number] = [...tranchePcts];
+                                  newPcts[t.idx] = val;
+                                  setTranchePcts(newPcts);
+                                }
+                              }}
+                              className="block w-full px-2 py-1.5 text-xs font-bold text-center bg-slate-50 border border-slate-200 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between text-3xs">
+                        <span className="text-slate-500">
+                          Sum: {tranchePcts.reduce((a, b) => a + b, 0)}%
+                        </span>
+                        {tranchePcts.reduce((a, b) => a + b, 0) !== 100 && (
+                          <span className="text-amber-600 font-semibold">
+                            Should total 100%
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -645,7 +828,7 @@ export default function App() {
           </section>
 
         {/* Right Column: Calculations & Dashboard (cols 6-12) */}
-        <section className="lg:col-span-7 space-y-6">
+        <section className="lg:col-span-7 min-h-0 space-y-6 overflow-y-auto overscroll-contain">
           
           {/* Executive KPI Metrics Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 md:gap-4">
@@ -718,7 +901,7 @@ export default function App() {
                 </div>
               </div>
               <p className="text-3xs text-slate-400 mt-2 border-t border-slate-150 pt-1.5 truncate">
-                Down Payment + EMIs
+                {outputs.disbursalType === 'clp' ? 'Down Payment + Pre-EMI + Full EMIs' : 'Down Payment + EMIs'}
               </p>
             </div>
 
@@ -790,7 +973,11 @@ export default function App() {
                       </tr>
 
                       <tr className="hover:bg-slate-50/40 bg-indigo-50/20">
-                        <td className="px-4 py-3 text-xs font-semibold text-indigo-900">Monthly EMI</td>
+                        <td className="px-4 py-3 text-xs font-semibold text-indigo-900">
+                          Monthly EMI
+                          {outputs.disbursalType === 'clp' && <span className="text-4xs text-indigo-500 font-normal block">Full EMI post-possession; Pre-EMI during construction</span>}
+                          {outputs.disbursalType === 'clp-fullemi' && <span className="text-4xs text-indigo-500 font-normal block">Full EMI from start (applied against cumulative disbursed)</span>}
+                        </td>
                         <td className="px-4 py-3 text-xs font-extrabold text-indigo-700 text-right font-mono">
                           {formatLargeINR(outputs.monthlyEmi)}
                         </td>
@@ -800,11 +987,25 @@ export default function App() {
                       <tr className="bg-slate-50/30">
                         <td className="px-4 py-2.5 text-xs font-semibold text-slate-800 pl-4">
                           Total EMIs Paid (Over Holding Period)
+                          {outputs.disbursalType === 'clp' && <span className="text-4xs text-slate-400 font-normal block">Pre-EMI + Full EMI post-possession</span>}
+                          {outputs.disbursalType === 'clp-fullemi' && <span className="text-4xs text-slate-400 font-normal block">Full EMI throughout (construction + post-possession)</span>}
                         </td>
                         <td className="px-4 py-2.5 text-xs font-bold text-slate-900 text-right font-mono">
                           {formatLargeINR(outputs.totalEmisPaid)}
                         </td>
                       </tr>
+
+                      {outputs.disbursalType === 'clp' && outputs.totalPreEmiInterest > 0 && (
+                        <tr className="bg-sky-50/30">
+                          <td className="px-4 py-1.5 text-3xs text-sky-700 pl-8 flex items-center gap-1">
+                            <span className="h-1.5 w-1.5 rounded-full bg-sky-400"></span> Out of which: Pre-EMI Interest (during construction)
+                          </td>
+                          <td className="px-4 py-1.5 text-3xs font-medium text-sky-700 text-right font-mono">
+                            {formatLargeINR(outputs.totalPreEmiInterest)}
+                          </td>
+                        </tr>
+                      )}
+
                       <tr className="bg-slate-50/10">
                         <td className="px-4 py-1.5 text-3xs text-slate-500 pl-8 flex items-center gap-1">
                           <span className="h-1.5 w-1.5 rounded-full bg-blue-400"></span> Out of which is Principal Paid
@@ -818,7 +1019,7 @@ export default function App() {
                           <span className="h-1.5 w-1.5 rounded-full bg-amber-400"></span> Out of which is Interest Paid
                         </td>
                         <td className="px-4 py-1.5 text-3xs font-medium text-slate-600 text-right font-mono">
-                          {formatLargeINR(outputs.totalInterestPaid)}
+                          {formatLargeINR(outputs.totalInterestPaid - (outputs.disbursalType === 'clp' ? outputs.totalPreEmiInterest : 0))}
                         </td>
                       </tr>
 
@@ -949,7 +1150,10 @@ export default function App() {
                         const propAreaPath = `M ${getX(0)},210 L ${propPath} L ${getX(years)},210 Z`;
 
                         // 2. Loan Balance Area
-                        const loanPoints = [{ yr: 0, val: outputs.loanAmount }];
+                        const initialLoanForChart = disbursalType !== 'upfront'
+                          ? outputs.loanAmount * tranchePcts[0] / 100
+                          : outputs.loanAmount;
+                        const loanPoints = [{ yr: 0, val: initialLoanForChart }];
                         outputs.yearlySummary.forEach((y, i) => {
                           loanPoints.push({ yr: i + 1, val: y.endingBalance });
                         });
@@ -1051,7 +1255,9 @@ export default function App() {
                       const yr = hoveredYear;
                       const years = outputs.yearlySummary.length;
                       const interpPropVal = yr === 0 ? purchasePrice : purchasePrice + ((salePrice - purchasePrice) / years) * yr;
-                      const loanBal = yr === 0 ? outputs.loanAmount : outputs.yearlySummary[yr - 1].endingBalance;
+                      const loanBal = yr === 0
+                        ? (disbursalType !== 'upfront' ? outputs.loanAmount * tranchePcts[0] / 100 : outputs.loanAmount)
+                        : outputs.yearlySummary[yr - 1].endingBalance;
                       const equity = interpPropVal - loanBal;
                       
                       // Calculate accumulated rent up to this year
@@ -1101,7 +1307,7 @@ export default function App() {
                   <div className="border border-slate-200 p-4 rounded-xl text-center bg-slate-50/30">
                     <span className="text-[10px] font-bold text-slate-400 uppercase block">Equity Built (Loan Paid Down)</span>
                     <strong className="text-base font-bold text-slate-800 mt-1 block">
-                      {formatLargeINR(outputs.loanAmount - outputs.outstandingPrincipalToClose)}
+                      {formatLargeINR(outputs.totalPrincipalPaid)}
                     </strong>
                     <span className="text-4xs text-slate-400">Total debt principal retired</span>
                   </div>
@@ -1220,6 +1426,7 @@ export default function App() {
 
         </section>
 
+        </div>
       </main>
 
       {/* Global Tooltip/Glossary Modal (Drawer/Overlay) */}

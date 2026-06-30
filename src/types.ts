@@ -8,6 +8,10 @@ export interface CalculatorInputs {
   enableRental: boolean;
   rentalYield: number;
   rentalStartYear: number;
+  // CLP fields
+  disbursalType: 'upfront' | 'clp' | 'clp-fullemi';
+  constructionPeriod: number;
+  tranchePcts: [number, number, number, number];
 }
 
 export interface AmortizationMonth {
@@ -18,6 +22,7 @@ export interface AmortizationMonth {
   outstandingBalance: number;
   rentEarned: number;
   cashFlow: number;
+  isPreEmi: boolean;
 }
 
 export interface YearlySummary {
@@ -47,4 +52,8 @@ export interface CalculatorOutputs {
   equityMultiple: number;
   amortizationSchedule: AmortizationMonth[];
   yearlySummary: YearlySummary[];
+  // CLP output fields
+  totalPreEmiInterest: number;
+  disbursalType: 'upfront' | 'clp' | 'clp-fullemi';
+  constructionPeriod: number;
 }
