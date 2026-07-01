@@ -3,6 +3,8 @@
 
 @theme {
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-mono: "JetBrains Mono", ui-monospace, SFontMono-Regular, monospace;
+  --text-3xs: 0.625rem;
+  --text-3xs--line-height: 0.875rem;
 }
 

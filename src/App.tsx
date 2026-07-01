@@ -411,7 +411,7 @@ export default function App() {
             <div className="space-y-4">
               <div className="border-b border-slate-100 pb-2">
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                  Capital Inflow
+                  1. Capital Inflow
                 </h3>
               </div>
                  
@@ -587,119 +587,6 @@ export default function App() {
                     </div>
                   )}
                 </div>
-              </div>
-
-              {/* Parameter Group 3: Holding & Rentals */}
-              <div className="space-y-4">
-                <div className="border-b border-slate-100 pb-2 pt-2">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                    3. Holding & Rental Income
-                  </h3>
-                </div>
-
-                {/* Holding Period */}
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <label className="text-[11px] font-semibold text-slate-600 shrink-0">
-                      Holding Period
-                    </label>
-                    <input
-                      type="range"
-                      min="1"
-                      max="20"
-                      step="1"
-                      value={holdingPeriod}
-                      onChange={(e) => setHoldingPeriod(parseInt(e.target.value, 10))}
-                      className="flex-1 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                    />
-                    <span className="text-xs font-bold text-slate-900 font-mono shrink-0 w-16 text-right">
-                      {holdingPeriod}y
-                    </span>
-                  </div>
-                  {holdingPeriod > loanTenure && (
-                    <div className="text-3xs text-amber-600 bg-amber-50 px-2.5 py-2 rounded border border-amber-100">
-                      Note: Holding Period is longer than the loan tenure. The loan will be fully repaid in Year {loanTenure}.
-                    </div>
-                  )}
-                </div>
-
-                {/* Rental Income Toggle */}
-                <div className="flex items-center justify-between py-1">
-                  <span className="text-[11px] font-semibold text-slate-600">
-                    Enable Rental Income?
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setEnableRental(!enableRental)}
-                    className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${enableRental ? 'bg-indigo-600' : 'bg-slate-200'}`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${enableRental ? 'translate-x-5' : 'translate-x-0'}`}
-                    />
-                  </button>
-                </div>
-
-                {enableRental && (
-                  <div className="pt-3 border-t border-slate-100 space-y-3">
-                    {/* Rental Yield */}
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <label className="text-[11px] font-semibold text-slate-500 shrink-0">
-                          Rental Yield
-                        </label>
-                        <input
-                          type="range"
-                          min="0.5"
-                          max="10"
-                          step="0.1"
-                          value={rentalYield}
-                          onChange={(e) => setRentalYield(parseFloat(e.target.value))}
-                          className="flex-1 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                        />
-                        <span className="text-xs font-bold text-slate-950 font-mono shrink-0 w-12 text-right">
-                          {rentalYield.toFixed(1)}%
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-3xs text-slate-400 font-medium">
-                        <span>Annual: {formatLargeINR(purchasePrice * (rentalYield / 100))}</span>
-                        <span>Monthly: {formatLargeINR((purchasePrice * (rentalYield / 100)) / 12)}/mo</span>
-                      </div>
-                    </div>
-
-                    {/* Rental Start Year */}
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <label className="text-[11px] font-semibold text-slate-500 shrink-0">
-                          Start Year
-                        </label>
-                        <input
-                          type="range"
-                          min="1"
-                          max={holdingPeriod}
-                          step="1"
-                          value={rentalStartYear}
-                          onChange={(e) => setRentalStartYear(parseInt(e.target.value, 10))}
-                          className="flex-1 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                        />
-                        <span className="text-xs font-bold text-slate-900 font-mono shrink-0 w-16 text-right">
-                          Year {rentalStartYear}
-                        </span>
-                      </div>
-                      <p className="text-3xs text-slate-400">
-                        Rental income begins in Month {((rentalStartYear - 1) * 12) + 1}. No rent accumulated before this.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Section 4: Disbursal Structure */}
-              <div className="space-y-4">
-                <div className="border-b border-slate-100 pb-2 pt-2">
-                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
-                    4. Disbursal Structure
-                  </h3>
-                </div>
 
                 {/* Disbursal Type Tabs */}
                 <div>
@@ -824,6 +711,111 @@ export default function App() {
                   </div>
                 )}
               </div>
+
+              {/* Parameter Group 3: Holding & Rentals */}
+              <div className="space-y-4">
+                <div className="border-b border-slate-100 pb-2 pt-2">
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                    3. Holding & Rental Income
+                  </h3>
+                </div>
+
+                {/* Holding Period */}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <label className="text-[11px] font-semibold text-slate-600 shrink-0">
+                      Holding Period
+                    </label>
+                    <input
+                      type="range"
+                      min="1"
+                      max="20"
+                      step="1"
+                      value={holdingPeriod}
+                      onChange={(e) => setHoldingPeriod(parseInt(e.target.value, 10))}
+                      className="flex-1 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                    />
+                    <span className="text-xs font-bold text-slate-900 font-mono shrink-0 w-16 text-right">
+                      {holdingPeriod}y
+                    </span>
+                  </div>
+                  {holdingPeriod > loanTenure && (
+                    <div className="text-3xs text-amber-600 bg-amber-50 px-2.5 py-2 rounded border border-amber-100">
+                      Note: Holding Period is longer than the loan tenure. The loan will be fully repaid in Year {loanTenure}.
+                    </div>
+                  )}
+                </div>
+
+                {/* Rental Income Toggle */}
+                <div className="flex items-center justify-between py-1">
+                  <span className="text-[11px] font-semibold text-slate-600">
+                    Enable Rental Income?
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setEnableRental(!enableRental)}
+                    className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${enableRental ? 'bg-indigo-600' : 'bg-slate-200'}`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${enableRental ? 'translate-x-5' : 'translate-x-0'}`}
+                    />
+                  </button>
+                </div>
+
+                {enableRental && (
+                  <div className="pt-3 border-t border-slate-100 space-y-3">
+                    {/* Rental Yield */}
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <label className="text-[11px] font-semibold text-slate-500 shrink-0">
+                          Rental Yield
+                        </label>
+                        <input
+                          type="range"
+                          min="0.5"
+                          max="10"
+                          step="0.1"
+                          value={rentalYield}
+                          onChange={(e) => setRentalYield(parseFloat(e.target.value))}
+                          className="flex-1 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                        />
+                        <span className="text-xs font-bold text-slate-950 font-mono shrink-0 w-12 text-right">
+                          {rentalYield.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-3xs text-slate-400 font-medium">
+                        <span>Annual: {formatLargeINR(purchasePrice * (rentalYield / 100))}</span>
+                        <span>Monthly: {formatLargeINR((purchasePrice * (rentalYield / 100)) / 12)}/mo</span>
+                      </div>
+                    </div>
+
+                    {/* Rental Start Year */}
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <label className="text-[11px] font-semibold text-slate-500 shrink-0">
+                          Start Year
+                        </label>
+                        <input
+                          type="range"
+                          min="1"
+                          max={holdingPeriod}
+                          step="1"
+                          value={rentalStartYear}
+                          onChange={(e) => setRentalStartYear(parseInt(e.target.value, 10))}
+                          className="flex-1 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                        />
+                        <span className="text-xs font-bold text-slate-900 font-mono shrink-0 w-16 text-right">
+                          Year {rentalStartYear}
+                        </span>
+                      </div>
+                      <p className="text-3xs text-slate-400">
+                        Rental income begins in Month {((rentalStartYear - 1) * 12) + 1}. No rent accumulated before this.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+            </div>
             </div>
           </section>
 
@@ -1160,16 +1152,25 @@ export default function App() {
                         const loanPath = loanPoints.map((p, i) => `${getX(p.yr)},${getY(p.val)}`).join(' L ');
                         const loanAreaPath = `M ${getX(0)},210 L ${loanPath} L ${getX(years)},210 Z`;
 
+                        // 3. Equity Line (Property Value - Loan Balance)
+                        const equityPoints = propPoints.map((p, i) => ({
+                          yr: p.yr,
+                          val: p.val - loanPoints[i].val,
+                        }));
+                        const equityPath = equityPoints.map((p, i) => `${getX(p.yr)},${getY(p.val)}`).join(' L ');
+
                         return (
                           <>
                             {/* Property Value Fill */}
                             <path d={propAreaPath} fill="url(#propValGrad)" opacity="0.1" />
                             <path d={propPath} fill="none" stroke="#10b981" strokeWidth="2" strokeDasharray="3 3" />
 
-                            {/* Home Equity Fill (Dynamic polygon between property value and loan balance) */}
                             {/* Outstanding Debt Fill */}
                             <path d={loanAreaPath} fill="url(#debtGrad)" opacity="0.15" />
                             <path d={loanPath} fill="none" stroke="#f59e0b" strokeWidth="2" />
+
+                            {/* Built-in Equity Line */}
+                            <path d={equityPath} fill="none" stroke="#4f46e5" strokeWidth="2" strokeDasharray="4 2" />
 
                             {/* Highlighted Interactive Nodes */}
                             {propPoints.map((p, i) => {
@@ -1209,6 +1210,18 @@ export default function App() {
                                     cy={yLoan} 
                                     r={isHovered ? "6" : "4"} 
                                     fill="#f59e0b" 
+                                    stroke="white" 
+                                    strokeWidth="1.5"
+                                    onMouseEnter={() => setHoveredYear(p.yr)}
+                                    onMouseLeave={() => setHoveredYear(null)}
+                                  />
+
+                                  {/* Equity dot */}
+                                  <circle 
+                                    cx={x} 
+                                    cy={getY(equityPoints[i].val)} 
+                                    r={isHovered ? "6" : "4"} 
+                                    fill="#4f46e5" 
                                     stroke="white" 
                                     strokeWidth="1.5"
                                     onMouseEnter={() => setHoveredYear(p.yr)}
@@ -1327,6 +1340,156 @@ export default function App() {
                   </div>
                 </div>
 
+              </div>
+            )}
+
+            {/* Tab 2b: Equity Comparison Chart (within charts tab) */}
+            {activeTab === 'charts' && disbursalType !== 'upfront' && (
+              <div className="p-6 space-y-4 border-t border-slate-150">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
+                    Disbursal Strategy Comparison
+                  </h3>
+                  <p className="text-3xs text-slate-500">
+                    How Full-EMI vs Pre-EMI equity trajectories diverge during construction.
+                  </p>
+                </div>
+
+                <div className="relative bg-slate-50 border border-slate-250 rounded-xl p-4 overflow-hidden">
+                  <div className="w-full h-[280px] relative">
+                    <svg viewBox="0 0 600 260" className="w-full h-full overflow-visible">
+                      {(() => {
+                        const altInputs = (disbursalType: 'clp' | 'clp-fullemi') => ({
+                          purchasePrice,
+                          downPaymentPct,
+                          interestRate,
+                          loanTenure,
+                          holdingPeriod,
+                          salePrice,
+                          enableRental: false,
+                          rentalYield,
+                          rentalStartYear,
+                          disbursalType,
+                          constructionPeriod,
+                          tranchePcts,
+                        });
+
+                        const clpOutputs = runFinancialModel(altInputs('clp'));
+                        const fullEmiOutputs = runFinancialModel(altInputs('clp-fullemi'));
+                        const years = holdingPeriod;
+
+                        // Compute equity points for each scenario
+                        const calcEquity = (summary: typeof clpOutputs.yearlySummary) => {
+                          const points: { yr: number; equity: number }[] = [];
+                          for (let y = 0; y <= years; y++) {
+                            const propVal = purchasePrice + ((salePrice - purchasePrice) / years) * y;
+                            const loanBal = y === 0
+                              ? (disbursalType !== 'upfront' ? outputs.loanAmount * tranchePcts[0] / 100 : outputs.loanAmount)
+                              : summary[y - 1].endingBalance;
+                            points.push({ yr: y, equity: Math.max(0, propVal - loanBal) });
+                          }
+                          return points;
+                        };
+
+                        const clpPoints = calcEquity(clpOutputs.yearlySummary);
+                        const fullPoints = calcEquity(fullEmiOutputs.yearlySummary);
+
+                        const allEquityValues = [...clpPoints, ...fullPoints].map(p => p.equity);
+                        const maxEquity = Math.max(...allEquityValues);
+                        const minEquity = 0;
+                        const range = maxEquity - minEquity;
+                        const padding = range * 0.15;
+                        const chartMax = maxEquity + padding;
+
+                        const getX = (y: number) => 60 + (y / years) * 500;
+                        const getY = (val: number) => 220 - ((val - minEquity) / (chartMax - minEquity)) * 190;
+
+                        const clpPath = clpPoints.map((p) => `${getX(p.yr)},${getY(p.equity)}`).join(' L ');
+                        const fullPath = fullPoints.map((p) => `${getX(p.yr)},${getY(p.equity)}`).join(' L ');
+
+                        // Y-axis ticks
+                        const yTicks = 5;
+                        const yTickInterval = chartMax / yTicks;
+
+                        return (
+                          <>
+                            {/* Grid lines & Y-axis labels */}
+                            {Array.from({ length: yTicks + 1 }, (_, i) => {
+                              const val = i * yTickInterval;
+                              const y = getY(val);
+                              return (
+                                <g key={`y-${i}`}>
+                                  <line x1="60" y1={y} x2="560" y2={y} stroke="#e2e8f0" strokeWidth="1" />
+                                  <text x="55" y={y + 3} fontSize="9" fill="#64748b" textAnchor="end" fontFamily="monospace">
+                                    {formatIndianWords(val)}
+                                  </text>
+                                </g>
+                              );
+                            })}
+
+                            {/* X-axis labels */}
+                            {Array.from({ length: years + 1 }, (_, i) => (
+                              <text key={`x-${i}`} x={getX(i)} y="240" fontSize="9" fill="#64748b" textAnchor="middle">
+                                {i}
+                              </text>
+                            ))}
+
+                            {/* Axes */}
+                            <line x1="60" y1="220" x2="560" y2="220" stroke="#cbd5e1" strokeWidth="1.5" />
+                            <line x1="60" y1="30" x2="60" y2="220" stroke="#cbd5e1" strokeWidth="1.5" />
+
+                            {/* Axis labels */}
+                            <text x="310" y="255" fontSize="10" fill="#475569" textAnchor="middle" fontFamily="sans-serif" fontWeight="600">
+                              Years
+                            </text>
+                            <text x="18" y="125" fontSize="10" fill="#475569" textAnchor="middle" fontFamily="sans-serif" fontWeight="600" transform="rotate(-90, 18, 125)">
+                              Equity
+                            </text>
+
+                            {/* Pre-EMI equity curve */}
+                            <path d={clpPath} fill="none" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5 3" />
+
+                            {/* Full-EMI equity curve */}
+                            <path d={fullPath} fill="none" stroke="#4f46e5" strokeWidth="2.5" />
+
+                            {/* Data points */}
+                            {clpPoints.map((p, i) => (
+                              <circle
+                                key={`clp-${i}`}
+                                cx={getX(p.yr)}
+                                cy={getY(p.equity)}
+                                r="4"
+                                fill="none"
+                                stroke="#94a3b8"
+                                strokeWidth="1.5"
+                              />
+                            ))}
+                            {fullPoints.map((p, i) => (
+                              <circle
+                                key={`full-${i}`}
+                                cx={getX(p.yr)}
+                                cy={getY(p.equity)}
+                                r="4"
+                                fill="#4f46e5"
+                                stroke="white"
+                                strokeWidth="1.5"
+                              />
+                            ))}
+                          </>
+                        );
+                      })()}
+                    </svg>
+                  </div>
+                </div>
+
+                <div className="flex gap-4 text-3xs font-semibold">
+                  <span className="flex items-center gap-1">
+                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-indigo-600 border-2 border-white shadow-xs"></span> Full EMI
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="inline-block h-2.5 w-2.5 rounded-full border-2 border-slate-400"></span> Pre-EMI
+                  </span>
+                </div>
               </div>
             )}
 
